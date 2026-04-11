@@ -36,15 +36,27 @@ Lattice sits inside your IDE and orchestrates parallel AI-assisted development:
 ## Quick Start
 
 ```bash
-# Install the VS Code extension
-# (search "Lattice" in VS Code Extensions marketplace)
+# Clone the repo
+git clone https://github.com/harshaldhaduk/momentum.git
+cd momentum
 
-# Start the coordination server
-git clone https://github.com/Ekansh236/Monolith.git
-cd lattice/server && npm install && npm run dev
+# Copy environment config
+cp server/.env.example server/.env
+# Add your ANTHROPIC_API_KEY to server/.env
 
-# Open VS Code, click the Lattice icon in the sidebar
-# Create a session and share the code with your teammates
+# Install dependencies and start the server
+npm install
+npm run dev   # starts server on :3001 + watches extension
+
+# In VS Code: Ctrl+Shift+P → "Developer: Install Extension from VSIX"
+# (or run 'npm run package -w extension' first)
+# Click the ⬡ Lattice icon in the sidebar → Create Session
+```
+
+### Docker (alternative)
+
+```bash
+docker compose up
 ```
 
 ## Architecture

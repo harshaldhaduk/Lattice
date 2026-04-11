@@ -75,15 +75,46 @@ export async function spawnCodingAgent(
 
     await runClaude(prompt, activeDir);
 
-    // Capture what changed
+    // Capture what changed — stage everything first so new untracked files are included
     let diff = '';
     if (isGitRepo) {
       try {
-        diff = execSync(`git diff HEAD`, { cwd: activeDir, maxBuffer: 1024 * 1024 }).toString();
-        if (!diff) {
-          diff = execSync(`git diff`, { cwd: activeDir, maxBuffer: 1024 * 1024 }).toString();
-        }
+        execSync('git add -A', { cwd: activeDir, timeout: 10000 });
+        diff = execSync('git diff --cached', { cwd: activeDir, maxBuffer: 4 * 1024 * 1024 }).toString();
       } catch {}
+
+      // Fallback: unstaged changes
+      if (!diff) {
+        try {
+          diff = execSync('git diff', { cwd: activeDir, maxBuffer: 4 * 1024 * 1024 }).toString();
+        } catch {}
+      }
+
+      // Last resort: manually build diff for any remaining untracked files
+      if (!diff) {
+        try {
+          const untracked = execSync('git ls-files --others --exclude-standard', {
+            cwd: activeDir, timeout: 5000,
+          }).toString().trim().split('\n').filter(Boolean);
+
+          const { readFileSync } = await import('fs');
+          for (const file of untracked) {
+            try {
+              const content = readFileSync(path.join(activeDir, file), 'utf8');
+              const lines = content.split('\n');
+              diff += [
+                `diff --git a/${file} b/${file}`,
+                'new file mode 100644',
+                '--- /dev/null',
+                `+++ b/${file}`,
+                `@@ -0,0 +1,${lines.length} @@`,
+                ...lines.map(l => `+${l}`),
+                '',
+              ].join('\n');
+            } catch {}
+          }
+        } catch {}
+      }
     }
 
     onProgress(`Agent finished: ${spec.description.slice(0, 50)}`);
