@@ -1,4 +1,4 @@
-import { Intent, CheckEditRequest, CheckEditResponse, ConflictVerdict } from '@lattice/shared';
+import { CheckEditRequest, CheckEditResponse, ConflictDetail } from '@lattice/shared';
 import { db } from './db';
 
 interface DbIntent {
@@ -6,33 +6,30 @@ interface DbIntent {
   session_id: string;
   participant_id: string;
   participant_name: string;
+  actor_type: string;
   description: string;
-  file_scope: string;
-  function_scope: string;
+  file_paths: string;   // JSON array
+  function_names: string; // JSON array
+  start_line: number | null;
+  end_line: number | null;
   status: string;
   priority: string;
   created_at: string;
   completed_at: string | null;
 }
 
-function dbRowToIntent(row: DbIntent): Intent {
-  return {
-    id: row.id,
-    sessionId: row.session_id,
-    participantId: row.participant_id,
-    participantName: row.participant_name,
-    description: row.description,
-    fileScope: JSON.parse(row.file_scope),
-    functionScope: JSON.parse(row.function_scope),
-    status: row.status as Intent['status'],
-    priority: row.priority as Intent['priority'],
-    createdAt: row.created_at,
-    completedAt: row.completed_at ?? undefined,
-  };
+function rangesOverlap(
+  aStart: number | null | undefined,
+  aEnd: number | null | undefined,
+  bStart: number | null | undefined,
+  bEnd: number | null | undefined,
+): boolean {
+  if (aStart == null || aEnd == null || bStart == null || bEnd == null) return false;
+  return aStart <= bEnd && bStart <= aEnd;
 }
 
 export function checkEditConflict(req: CheckEditRequest): CheckEditResponse {
-  // Fetch all active intents in this session that belong to OTHER participants
+  // All active intents in this session owned by OTHER participants
   const rows = db.prepare(`
     SELECT * FROM intents
     WHERE session_id = ?
@@ -40,40 +37,85 @@ export function checkEditConflict(req: CheckEditRequest): CheckEditResponse {
       AND status = 'in_progress'
   `).all(req.sessionId, req.participantId) as unknown as DbIntent[];
 
-  const activeIntents = rows.map(dbRowToIntent);
-
-  if (activeIntents.length === 0) {
-    return { verdict: 'SAFE', conflictingIntents: [], message: 'No active intents. Safe to apply.' };
+  if (rows.length === 0) {
+    return { verdict: 'SAFE', conflicts: [], message: 'No active intents. Safe to apply.' };
   }
 
-  // Tier 1: File-level overlap
-  const fileConflicts = activeIntents.filter(i => i.fileScope.includes(req.filePath));
+  // Tier 1: File-level scope
+  const fileMatches = rows.filter(r => {
+    const paths: string[] = JSON.parse(r.file_paths);
+    return paths.includes(req.filePath);
+  });
 
-  if (fileConflicts.length === 0) {
-    return { verdict: 'SAFE', conflictingIntents: [], message: 'File not claimed by any active intent.' };
+  if (fileMatches.length === 0) {
+    return { verdict: 'SAFE', conflicts: [], message: 'File not claimed by any active intent.' };
   }
 
-  // Tier 2: Function-level overlap (if modifiedFunctions provided)
-  if (req.modifiedFunctions && req.modifiedFunctions.length > 0) {
-    const functionConflicts = fileConflicts.filter(i =>
-      i.functionScope.some(fn => req.modifiedFunctions!.includes(fn))
-    );
+  // Tier 2: Function-name overlap (strongest signal — return CONFLICT immediately)
+  if (req.functionNames && req.functionNames.length > 0) {
+    const fnMatches = fileMatches.filter(r => {
+      const fns: string[] = JSON.parse(r.function_names);
+      return fns.some(fn => req.functionNames!.includes(fn));
+    });
 
-    if (functionConflicts.length > 0) {
-      const names = functionConflicts.map(i => i.participantName).join(', ');
+    if (fnMatches.length > 0) {
+      const details: ConflictDetail[] = fnMatches.map(r => ({
+        intentId: r.id,
+        participantName: r.participant_name,
+        actorType: r.actor_type as 'human' | 'agent',
+        description: r.description,
+        filePath: req.filePath,
+        functionNames: JSON.parse(r.function_names),
+        overlapType: 'function' as const,
+      }));
+      const names = fnMatches.map(r => r.participant_name).join(', ');
       return {
         verdict: 'CONFLICT',
-        conflictingIntents: functionConflicts,
+        conflicts: details,
         message: `Function-level conflict with ${names}. Negotiation required.`,
       };
     }
   }
 
-  // File claimed but no function-level hit → REVIEW
-  const names = fileConflicts.map(i => i.participantName).join(', ');
+  // Tier 3: Line-range overlap
+  if (req.startLine != null && req.endLine != null) {
+    const lineMatches = fileMatches.filter(r =>
+      rangesOverlap(req.startLine, req.endLine, r.start_line, r.end_line)
+    );
+
+    if (lineMatches.length > 0) {
+      const details: ConflictDetail[] = lineMatches.map(r => ({
+        intentId: r.id,
+        participantName: r.participant_name,
+        actorType: r.actor_type as 'human' | 'agent',
+        description: r.description,
+        filePath: req.filePath,
+        functionNames: JSON.parse(r.function_names),
+        overlapType: 'line_range' as const,
+      }));
+      const names = lineMatches.map(r => r.participant_name).join(', ');
+      return {
+        verdict: 'CONFLICT',
+        conflicts: details,
+        message: `Line-range overlap (${req.startLine}-${req.endLine}) with ${names}. Negotiation required.`,
+      };
+    }
+  }
+
+  // File claimed but no function/line overlap → REVIEW (shadow patch recommended)
+  const details: ConflictDetail[] = fileMatches.map(r => ({
+    intentId: r.id,
+    participantName: r.participant_name,
+    actorType: r.actor_type as 'human' | 'agent',
+    description: r.description,
+    filePath: req.filePath,
+    functionNames: JSON.parse(r.function_names),
+    overlapType: 'file' as const,
+  }));
+  const names = fileMatches.map(r => r.participant_name).join(', ');
   return {
     verdict: 'REVIEW',
-    conflictingIntents: fileConflicts,
-    message: `${req.filePath} is in ${names}'s scope. Staging as shadow patch recommended.`,
+    conflicts: details,
+    message: `${req.filePath} is in ${names}'s scope. Staging as shadow patch is recommended.`,
   };
 }

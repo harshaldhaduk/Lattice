@@ -7,7 +7,7 @@ export class ConflictInterceptor implements vscode.Disposable {
 
   constructor(private client: LatticeClient, private sidebar: SidebarProvider) {
     this.disposables.push(
-      vscode.workspace.onWillSaveTextDocument(e => this.onWillSave(e))
+      vscode.workspace.onWillSaveTextDocument(e => this.onWillSave(e)),
     );
   }
 
@@ -19,49 +19,56 @@ export class ConflictInterceptor implements vscode.Disposable {
 
     const relPath = vscode.workspace.asRelativePath(event.document.uri);
 
-    // Find an active intent from this participant that covers this file
+    // Find the caller's own intent for this file (for staging context)
     const myIntent = state.intents.find(
       i => i.participantId === this.client.participantId &&
            i.status === 'in_progress' &&
-           (i.fileScope.length === 0 || i.fileScope.some(f => relPath.includes(f) || f.includes(relPath)))
+           (i.filePaths.length === 0 || i.filePaths.some(f => relPath.includes(f) || f.includes(relPath))),
     );
 
-    // Check if any OTHER participant has an active intent covering this file
+    // Other participants' active intents that overlap this file
     const conflictingIntents = state.intents.filter(
       i => i.participantId !== this.client.participantId &&
            i.status === 'in_progress' &&
-           i.fileScope.some(f => relPath.includes(f) || f.includes(relPath))
+           i.filePaths.some(f => relPath.includes(f) || f.includes(relPath)),
     );
 
     if (conflictingIntents.length === 0) return;
 
-    // Warn the user — the actual check/stage happens via the banner actions
     const names = conflictingIntents.map(i => i.participantName).join(', ');
     const tasks = conflictingIntents.map(i => `"${i.description}"`).join(', ');
 
     event.waitUntil(
       vscode.window.showWarningMessage(
-        `⚠ Lattice: ${names} is working in this file (${tasks})`,
+        `Lattice: ${names} is working in this file (${tasks})`,
         { modal: false },
         'Stage as Shadow Patch',
         'Check Conflict',
-        'Override & Save'
+        'Override & Save',
       ).then(async choice => {
         if (choice === 'Stage as Shadow Patch') {
-          const intentId = myIntent?.id ?? 'no-intent';
-          const diff = `// Staged by ${this.client.participantName} on save`;
-          await this.client.proposePatch(intentId, relPath, diff, `Saving ${relPath} while ${names} has an active intent on this file`);
+          const intentId = myIntent?.id ?? conflictingIntents[0].id;
+          // Build a minimal diff from document text
+          const docText = event.document.getText();
+          const diff = `--- a/${relPath}\n+++ b/${relPath}\n[staged by ${this.client.participantName} on save]`;
+          await this.client.proposePatch(
+            intentId, relPath, diff,
+            `Save by ${this.client.participantName} while ${names} has an active intent on this file`,
+          );
           this.sidebar.refresh();
-          // Cancel the save — the patch is staged instead
-          // (In production you'd return a TextEdit[] to vscode to suppress the save)
           vscode.window.showInformationMessage('Change staged as shadow patch. Your teammates can approve it.');
         } else if (choice === 'Check Conflict') {
-          const intentId = myIntent?.id ?? 'no-intent';
-          const verdict = await this.client.checkEdit(intentId, relPath, '', []);
-          vscode.window.showInformationMessage(`Verdict: ${verdict.verdict} — ${verdict.message}`);
+          const intentId = myIntent?.id ?? conflictingIntents[0].id;
+          try {
+            const verdict = await this.client.checkEdit(intentId, relPath, '');
+            const label = verdict.verdict === 'SAFE' ? '✓ SAFE' : verdict.verdict === 'REVIEW' ? '⚠ REVIEW' : '✕ CONFLICT';
+            vscode.window.showInformationMessage(`${label} — ${verdict.message}`);
+          } catch {
+            vscode.window.showErrorMessage('Could not reach Lattice server.');
+          }
         }
         // 'Override & Save' or dismissed → save proceeds normally
-      })
+      }),
     );
   }
 

@@ -1,7 +1,14 @@
 import { io, Socket } from 'socket.io-client';
 import {
-  Session, Participant, Intent, ShadowPatch, NegotiationMessage,
-  SessionState, CheckEditResponse, ServerToClientEvents, ClientToServerEvents,
+  Session,
+  Participant,
+  Intent,
+  ShadowPatch,
+  NegotiationEvent,
+  SessionState,
+  CheckEditResponse,
+  ServerToClientEvents,
+  ClientToServerEvents,
 } from '@lattice/shared';
 
 type EventCallback<T> = (data: T) => void;
@@ -14,11 +21,12 @@ export class LatticeClient {
   private socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
   private serverUrl: string;
   private state?: SessionState;
+  private heartbeatTimer?: ReturnType<typeof setInterval>;
 
   // Event listeners
   private onStateChange?: EventCallback<SessionState>;
-  private onConflict?: EventCallback<{ edit: any; verdict: CheckEditResponse }>;
-  private onNegotiation?: EventCallback<NegotiationMessage>;
+  private onConflict?: EventCallback<{ filePath: string; verdict: CheckEditResponse }>;
+  private onEventAdded?: EventCallback<NegotiationEvent>;
   private onPatch?: EventCallback<ShadowPatch>;
 
   constructor(serverUrl: string) {
@@ -35,23 +43,25 @@ export class LatticeClient {
 
   // ── Session Lifecycle ──────────────────────────────────────────────────────
 
-  async createAndJoinSession(name: string, participantName: string): Promise<void> {
+  async createAndJoinSession(name: string, participantName: string, actorType: 'human' | 'agent' = 'human'): Promise<void> {
     const res = await fetch(`${this.serverUrl}/api/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    const session: Session = await res.json();
-    await this.joinSession(session.id, participantName);
+    if (!res.ok) throw new Error(await res.text());
+    const session = (await res.json()) as Session;
+    await this.joinSession(session.id, participantName, actorType);
   }
 
-  async joinSession(sessionId: string, participantName: string): Promise<void> {
+  async joinSession(sessionId: string, participantName: string, actorType: 'human' | 'agent' = 'human'): Promise<void> {
     const res = await fetch(`${this.serverUrl}/api/sessions/${sessionId}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, participantName }),
+      body: JSON.stringify({ participantName, actorType }),
     });
-    const participant: Participant = await res.json();
+    if (!res.ok) throw new Error(await res.text());
+    const participant = (await res.json()) as Participant;
 
     this.sessionId = sessionId;
     this.participantId = participant.id;
@@ -59,9 +69,11 @@ export class LatticeClient {
 
     this.connectSocket();
     await this.syncState();
+    this.startHeartbeat();
   }
 
   disconnect(): void {
+    this.stopHeartbeat();
     this.socket?.disconnect();
     this.sessionId = undefined;
     this.participantId = undefined;
@@ -70,7 +82,12 @@ export class LatticeClient {
 
   // ── Intents ────────────────────────────────────────────────────────────────
 
-  async registerIntent(description: string, fileScope: string[], functionScope: string[]): Promise<Intent> {
+  async registerIntent(
+    description: string,
+    filePaths: string[],
+    functionNames: string[],
+    options?: { startLine?: number; endLine?: number; priority?: 'blocking' | 'normal' | 'background' },
+  ): Promise<Intent> {
     const res = await fetch(`${this.serverUrl}/api/intents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,18 +95,48 @@ export class LatticeClient {
         sessionId: this.sessionId,
         participantId: this.participantId,
         description,
-        fileScope,
-        functionScope,
+        filePaths,
+        functionNames,
+        startLine: options?.startLine,
+        endLine: options?.endLine,
+        priority: options?.priority ?? 'normal',
       }),
     });
-    const intent: Intent = await res.json();
+    if (!res.ok) throw new Error(await res.text());
+    const intent = (await res.json()) as Intent;
     await this.syncState();
     return intent;
   }
 
+  async completeIntent(intentId: string): Promise<void> {
+    await fetch(`${this.serverUrl}/api/intents/${intentId}/complete`, { method: 'PATCH' });
+    await this.syncState();
+  }
+
+  // ── AI Planning ────────────────────────────────────────────────────────────
+
+  async planWork(prompt: string, autoRegister = false): Promise<{ specs: any[]; registered: any[] }> {
+    const res = await fetch(`${this.serverUrl}/api/sessions/${this.sessionId}/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, participantId: this.participantId, autoRegister }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json() as { specs: any[]; registered: any[] };
+    if (autoRegister) await this.syncState();
+    return data;
+  }
+
   // ── Edit Checks ────────────────────────────────────────────────────────────
 
-  async checkEdit(intentId: string, filePath: string, diff: string, modifiedFunctions?: string[]): Promise<CheckEditResponse> {
+  async checkEdit(
+    intentId: string,
+    filePath: string,
+    diff: string,
+    functionNames?: string[],
+    startLine?: number,
+    endLine?: number,
+  ): Promise<CheckEditResponse> {
     const res = await fetch(`${this.serverUrl}/api/edits/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -99,10 +146,13 @@ export class LatticeClient {
         intentId,
         filePath,
         diff,
-        modifiedFunctions,
+        functionNames: functionNames ?? [],
+        startLine,
+        endLine,
       }),
     });
-    return res.json();
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<CheckEditResponse>;
   }
 
   // ── Patches ────────────────────────────────────────────────────────────────
@@ -120,7 +170,8 @@ export class LatticeClient {
         reason,
       }),
     });
-    return res.json();
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<ShadowPatch>;
   }
 
   async approvePatch(patchId: string): Promise<void> {
@@ -144,20 +195,22 @@ export class LatticeClient {
   // ── Event Subscriptions ────────────────────────────────────────────────────
 
   onStateUpdate(cb: EventCallback<SessionState>) { this.onStateChange = cb; }
-  onConflictDetected(cb: EventCallback<{ edit: any; verdict: CheckEditResponse }>) { this.onConflict = cb; }
-  onNegotiationMessage(cb: EventCallback<NegotiationMessage>) { this.onNegotiation = cb; }
+  onConflictDetected(cb: EventCallback<{ filePath: string; verdict: CheckEditResponse }>) { this.onConflict = cb; }
+  onNegotiationEvent(cb: EventCallback<NegotiationEvent>) { this.onEventAdded = cb; }
   onPatchPending(cb: EventCallback<ShadowPatch>) { this.onPatch = cb; }
 
   // ── Private ────────────────────────────────────────────────────────────────
 
   private connectSocket(): void {
-    this.socket = io(this.serverUrl);
+    this.socket = io(this.serverUrl, { transports: ['websocket', 'polling'] });
 
     this.socket.on('connect', () => {
       this.socket!.emit('session:join', {
         sessionId: this.sessionId!,
         participantId: this.participantId!,
       });
+      // Re-sync after socket connects so sidebar gets connected:true
+      this.syncState();
     });
 
     this.socket.on('session:state', (state) => {
@@ -169,9 +222,13 @@ export class LatticeClient {
       this.onConflict?.(data);
     });
 
-    this.socket.on('negotiation:message', (msg) => {
-      this.syncState();
-      this.onNegotiation?.(msg);
+    this.socket.on('event:added', (event) => {
+      // Merge into local state events list
+      if (this.state) {
+        this.state = { ...this.state, events: [...this.state.events, event] };
+        this.onStateChange?.(this.state);
+      }
+      this.onEventAdded?.(event);
     });
 
     this.socket.on('patch:pending', (patch) => {
@@ -182,7 +239,19 @@ export class LatticeClient {
     this.socket.on('intent:added', () => this.syncState());
     this.socket.on('intent:updated', () => this.syncState());
     this.socket.on('participant:joined', () => this.syncState());
-    this.socket.on('presence:changed', () => this.syncState());
+    this.socket.on('presence:changed', (participant) => {
+      if (this.state) {
+        const idx = this.state.participants.findIndex(p => p.id === participant.id);
+        if (idx >= 0) {
+          const updated = [...this.state.participants];
+          updated[idx] = participant;
+          this.state = { ...this.state, participants: updated };
+        } else {
+          this.state = { ...this.state, participants: [...this.state.participants, participant] };
+        }
+        this.onStateChange?.(this.state);
+      }
+    });
     this.socket.on('patch:updated', () => this.syncState());
   }
 
@@ -191,9 +260,24 @@ export class LatticeClient {
     try {
       const res = await fetch(`${this.serverUrl}/api/sessions/${this.sessionId}/state`);
       if (res.ok) {
-        this.state = await res.json();
+        this.state = (await res.json()) as SessionState;
         if (this.state) this.onStateChange?.(this.state);
       }
     } catch { /* server may not be ready yet */ }
+  }
+
+  private startHeartbeat(): void {
+    this.heartbeatTimer = setInterval(() => {
+      if (this.participantId && this.socket?.connected) {
+        this.socket.emit('heartbeat', { participantId: this.participantId });
+      }
+    }, 20_000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
+    }
   }
 }

@@ -77,6 +77,7 @@
   },
   "dependencies": {
     "@lattice/shared": "*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {

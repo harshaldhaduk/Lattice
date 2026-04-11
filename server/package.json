@@ -11,9 +11,11 @@
     "@anthropic-ai/sdk": "^0.30.0",
     "@lattice/shared": "*",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.1",
     "express": "^4.19.2",
     "socket.io": "^4.7.5",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
