@@ -26,6 +26,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV LATTICE_DB_PATH=/data/lattice.db
 
 # Only copy what the server needs at runtime
 COPY --from=builder /app/package.json ./

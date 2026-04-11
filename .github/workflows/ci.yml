@@ -60,6 +60,17 @@ jobs:
             -p 3001:3001 \
             -e ANTHROPIC_API_KEY=test \
             lattice-server:${{ github.sha }}
-          sleep 5
-          curl -f http://localhost:3001/health || exit 1
+
+          # Wait up to 30 s for the server to become healthy
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:3001/health; then
+              echo "Server is up"
+              break
+            fi
+            echo "Attempt $i/15 — waiting..."
+            sleep 2
+          done
+
+          # Final check — fail the job if still not up, and dump logs for debugging
+          curl -f http://localhost:3001/health || (docker logs lattice-test && exit 1)
           docker stop lattice-test
