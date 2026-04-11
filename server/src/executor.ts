@@ -56,18 +56,19 @@ export async function spawnCodingAgent(
     const activeDir = worktreeDir ?? repoPath;
 
     const prompt = [
-      `You are a coding agent implementing exactly one task. Be concise and focused.`,
+      `You are a coding agent. Implement the task below by actually writing files to disk using your tools. Do not describe what you would do — just do it.`,
       ``,
       `TASK: ${spec.description}`,
-      `FILES TO MODIFY: ${spec.filePaths.join(', ')}`,
-      spec.functionNames.length ? `FUNCTIONS TO MODIFY: ${spec.functionNames.join(', ')}` : '',
+      `TARGET FILES: ${spec.filePaths.join(', ')}`,
+      spec.functionNames.length ? `FUNCTIONS: ${spec.functionNames.join(', ')}` : '',
+      `WORKING DIRECTORY: ${activeDir}`,
       ``,
-      `Instructions:`,
-      `- Implement the task described above`,
-      `- Only modify the files listed`,
-      `- Write clean, production-quality TypeScript`,
-      `- Do not add extra comments, tests, or unrelated changes`,
-      `- When done, stop`,
+      `Rules:`,
+      `- Use the Write or Edit tool to create/modify the files listed`,
+      `- If a directory doesn't exist, create it first with Bash (mkdir -p)`,
+      `- Write real, working content — not placeholders`,
+      `- Only touch the files listed above`,
+      `- When done, stop immediately`,
     ].filter(Boolean).join('\n');
 
     onProgress(`Agent running: ${spec.description.slice(0, 50)}...`);
@@ -139,8 +140,9 @@ function runClaude(prompt: string, cwd: string): Promise<string> {
       return;
     }
 
-    // claude -p runs non-interactively and exits when done
-    const proc = spawn(claudeCmd, ['-p', prompt], {
+    // --dangerously-skip-permissions lets Claude use Write/Bash tools without confirmation.
+    // -p (print mode) feeds the prompt non-interactively and exits when done.
+    const proc = spawn(claudeCmd, ['--dangerously-skip-permissions', '-p', prompt], {
       cwd,
       timeout: 180_000, // 3 min max per agent
       env: { ...process.env, TERM: 'xterm' },
