@@ -12,14 +12,17 @@ export interface AgentResult {
   error?: string;
 }
 
-// Check if claude CLI is available
-export function claudeAvailable(): boolean {
-  try {
-    execSync('claude --version', { stdio: 'ignore', timeout: 5000 });
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * Async, non-blocking check that the claude CLI binary is present and executable.
+ * Uses spawn rather than execSync to avoid blocking the event loop.
+ */
+export function claudeAvailable(): Promise<boolean> {
+  return new Promise(resolve => {
+    const proc = spawn('claude', ['--version'], { stdio: 'ignore' });
+    const timer = setTimeout(() => { proc.kill(); resolve(false); }, 5000);
+    proc.on('close', code => { clearTimeout(timer); resolve(code === 0); });
+    proc.on('error', () => { clearTimeout(timer); resolve(false); });
+  });
 }
 
 // Run one coding agent for one intent spec

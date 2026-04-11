@@ -16,8 +16,14 @@ const HEARTBEAT_TIMEOUT_MS = 45_000;
 const app = express();
 const httpServer = createServer(app);
 
+// CORS_ORIGINS: comma-separated list, e.g. "http://localhost:3000,http://localhost:5173"
+// Defaults to '*' in development for VS Code webview compatibility.
+const corsOrigin: string | string[] = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : '*';
+
 const io = new SocketServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PATCH'] },
+  cors: { origin: corsOrigin, methods: ['GET', 'POST', 'PATCH'] },
 });
 
 // ── Security middleware ───────────────────────────────────────────────────────
@@ -44,7 +50,7 @@ const editCheckLimiter = rateLimit({
   message: { error: 'Edit check rate limit exceeded.' },
 });
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '512kb' }));
 app.use('/api', apiLimiter);
 app.use('/api/edits/check', editCheckLimiter);

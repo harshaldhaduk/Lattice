@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import fs from 'fs';
 import { Server as SocketServer } from 'socket.io';
 import { db } from './db';
 import { checkEditConflict } from './conflict';
@@ -154,6 +156,26 @@ function getSessionState(sessionId: string): SessionState | null {
     patches,
     events,
   };
+}
+
+// ── repoPath sanitization ─────────────────────────────────────────────────────
+// Prevents path traversal and command injection via client-supplied filesystem paths.
+
+function sanitizeRepoPath(raw: unknown): { ok: true; resolved: string } | { ok: false; error: string } {
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return { ok: false, error: 'repoPath must be a non-empty string' };
+  }
+  const resolved = path.resolve(raw); // normalizes traversal attempts like ../../
+  if (!path.isAbsolute(resolved)) {
+    return { ok: false, error: 'repoPath must resolve to an absolute path' };
+  }
+  try {
+    const stat = fs.statSync(resolved);
+    if (!stat.isDirectory()) return { ok: false, error: 'repoPath must be a directory' };
+  } catch {
+    return { ok: false, error: `repoPath does not exist: ${resolved}` };
+  }
+  return { ok: true, resolved };
 }
 
 // ── Zod validation middleware helper ────────────────────────────────────────
@@ -670,12 +692,16 @@ export function createRouter(io: SocketServer): Router {
     const { specs, repoPath, participantId } = req.body;
 
     if (!specs?.length) { res.status(400).json({ error: 'specs required' }); return; }
-    if (!repoPath) { res.status(400).json({ error: 'repoPath required' }); return; }
+
+    // Sanitize repoPath: normalize, verify absolute path, confirm it's an existing directory
+    const pathCheck = sanitizeRepoPath(repoPath);
+    if (!pathCheck.ok) { res.status(400).json({ error: pathCheck.error }); return; }
+    const safeRepoPath = pathCheck.resolved;
 
     const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(req.params.id) as any;
     if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
 
-    if (!claudeAvailable()) {
+    if (!await claudeAvailable()) {
       res.status(400).json({ error: 'claude CLI not found. Install: npm install -g @anthropic-ai/claude-code' });
       return;
     }
@@ -726,7 +752,7 @@ export function createRouter(io: SocketServer): Router {
       );
 
       // Spawn the agent
-      const result = await spawnCodingAgent(spec, repoPath, (msg) => {
+      const result = await spawnCodingAgent(spec, safeRepoPath, (msg) => {
         const ev = insertEvent({
           sessionId,
           eventType: 'system',
