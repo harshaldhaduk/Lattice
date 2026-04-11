@@ -16,9 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   client = new LatticeClient(serverUrl);
 
-  // Expose workspace path for agent execution
-  const repoPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-  client.repoPath = repoPath;
+  // Expose workspace path for agent execution — always resolve to the git root
+  // so patches are applied to momentum/ regardless of which subfolder VS Code has open
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  client.repoPath = findGitRoot(workspaceRoot) ?? workspaceRoot;
 
   // ── Status bar ─────────────────────────────────────────────────────────────
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -153,6 +154,23 @@ export function deactivate() {
   interceptor?.dispose();
   client?.disconnect();
   statusBarItem?.dispose();
+}
+
+// ── Git root resolver ─────────────────────────────────────────────────────────
+
+function findGitRoot(startDir: string): string | null {
+  if (!startDir) return null;
+  const { execSync } = require('child_process') as typeof import('child_process');
+  try {
+    const root = execSync('git rev-parse --show-toplevel', {
+      cwd: startDir,
+      timeout: 5000,
+      encoding: 'utf8',
+    }).trim();
+    return root;
+  } catch {
+    return null;
+  }
 }
 
 // ── Status bar helpers ────────────────────────────────────────────────────────
