@@ -1,14 +1,21 @@
 import { spawn, execSync } from 'child_process';
 import path from 'path';
+import { normalize, isAbsolute } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { IntentSpec } from './planner';
 
 export interface AgentResult {
+  /** The intent spec this agent was working on. */
   spec: IntentSpec;
+  /** Human-readable agent identifier (priority + short UUID). */
   agentName: string;
+  /** Full UUID for the agent run. */
   agentId: string;
+  /** Unified diff of all changes the agent made (empty string if none). */
   diff: string;
+  /** Whether the agent completed without error. */
   success: boolean;
+  /** Error message if success is false. */
   error?: string;
 }
 
@@ -25,8 +32,40 @@ export function claudeAvailable(): Promise<boolean> {
   });
 }
 
-// Run one coding agent for one intent spec
-// repoPath: absolute path to the git repo (workspace folder)
+/**
+ * Validates and normalises a repository path supplied by the client.
+ *
+ * Rejects relative paths and any path containing traversal sequences (`..`)
+ * to prevent path traversal / command injection via the repoPath parameter.
+ *
+ * @returns The normalised absolute path, or null if the path is invalid.
+ */
+export function sanitizeRepoPath(repoPath: unknown): string | null {
+  if (typeof repoPath !== 'string' || !repoPath.trim()) return null;
+  const normalised = normalize(repoPath.trim());
+  if (!isAbsolute(normalised)) return null;
+  // Reject any residual traversal sequences after normalisation
+  if (normalised.split(path.sep).some(part => part === '..')) return null;
+  return normalised;
+}
+
+/**
+ * Spawns an isolated Claude Code agent to implement a single IntentSpec.
+ *
+ * Isolation strategy:
+ *  1. If the target directory is a git repo, a temporary worktree is created
+ *     at `../lattice-wt-<agentId>` so the agent's changes don't pollute the
+ *     working tree of other concurrently running agents.
+ *  2. The Claude CLI is invoked with `--dangerously-skip-permissions --print`
+ *     and the task prompt is written to stdin to avoid shell-escaping issues.
+ *  3. After the agent finishes, a unified diff is captured via `git diff --cached`
+ *     (or `git diff` / manual diff for untracked files as fallback).
+ *  4. The worktree is always cleaned up in the `finally` block.
+ *
+ * @param spec      The coding task for this agent to complete.
+ * @param repoPath  Absolute path to the repository root (must pass sanitizeRepoPath).
+ * @param onProgress  Callback for live progress messages sent to the client.
+ */
 export async function spawnCodingAgent(
   spec: IntentSpec,
   repoPath: string,

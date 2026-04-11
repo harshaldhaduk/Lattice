@@ -616,7 +616,8 @@ export function createRouter(io: SocketServer): Router {
     const state = getSessionState(sessionId);
     if (!state) { res.status(404).json({ error: 'Session not found' }); return; }
 
-    const { repoPath } = req.body;
+    const pathCheck = sanitizeRepoPath(req.body.repoPath ?? null);
+    const repoPath = pathCheck.ok ? pathCheck.resolved : null;
 
     // Build intent-annotated commit message
     const completedIntents = state.intents.filter(i => i.status === 'complete');
@@ -689,19 +690,19 @@ export function createRouter(io: SocketServer): Router {
   // ── Agent Execution ──────────────────────────────────────────────────────
 
   router.post('/sessions/:id/execute', async (req, res) => {
-    const { specs, repoPath, participantId } = req.body;
+    const { specs, repoPath: rawRepoPath, participantId } = req.body;
 
     if (!specs?.length) { res.status(400).json({ error: 'specs required' }); return; }
 
     // Sanitize repoPath: normalize, verify absolute path, confirm it's an existing directory
-    const pathCheck = sanitizeRepoPath(repoPath);
+    const pathCheck = sanitizeRepoPath(rawRepoPath);
     if (!pathCheck.ok) { res.status(400).json({ error: pathCheck.error }); return; }
     const safeRepoPath = pathCheck.resolved;
 
     const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(req.params.id) as any;
     if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
 
-    if (!await claudeAvailable()) {
+    if (!(await claudeAvailable())) {
       res.status(400).json({ error: 'claude CLI not found. Install: npm install -g @anthropic-ai/claude-code' });
       return;
     }

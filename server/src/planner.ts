@@ -2,14 +2,33 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+/** A single coding intent produced by task decomposition. */
 export interface IntentSpec {
+  /** One-sentence description of the coding task. */
   description: string;
+  /** Relative file paths the agent is expected to touch. */
   filePaths: string[];
+  /** Function names the agent is expected to modify (may be empty). */
   functionNames: string[];
+  /** Execution priority: blocking tasks must finish before normal ones start. */
   priority: 'blocking' | 'normal' | 'background';
+  /** Why this priority level was chosen. */
   rationale: string;
 }
 
+/**
+ * Decomposes a free-text development task into 2–5 concrete, non-overlapping
+ * IntentSpecs suitable for parallel or sequenced execution by coding agents.
+ *
+ * Strategy:
+ *  1. Attempt to call Claude (claude-haiku-4-5) for high-quality decomposition.
+ *  2. If the API is unavailable (no key, billing issue, network error), fall
+ *     back to a keyword-based heuristic decomposition so the endpoint always
+ *     returns something useful during development and demos.
+ *
+ * @param prompt       Natural-language description of the work to be done.
+ * @param repoContext  Optional repo structure / context for better file path inference.
+ */
 export async function decomposeTask(prompt: string, repoContext?: string): Promise<IntentSpec[]> {
   try {
     return await decomposeWithClaude(prompt, repoContext);
