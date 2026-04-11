@@ -2,20 +2,18 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy workspace manifests
+# Copy workspace manifests + lock file
 COPY package.json package-lock.json ./
 COPY shared/package.json ./shared/
 COPY server/package.json ./server/
 COPY extension/package.json ./extension/
 
-# Install all workspace deps (plain npm ci ensures every hoisted package is present)
+# Full install for building (includes devDependencies like tsc)
 RUN npm ci --ignore-scripts
 
-# Copy source
+# Copy source and build
 COPY shared/ ./shared/
 COPY server/ ./server/
-
-# Build shared first, then server
 RUN npm run build -w shared
 RUN npm run build -w server
 
@@ -28,15 +26,21 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV LATTICE_DB_PATH=/data/lattice.db
 
-# Only copy what the server needs at runtime
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/server/package.json ./server/
-COPY --from=builder /app/shared/dist ./shared/dist
-COPY --from=builder /app/shared/package.json ./shared/
+# Copy manifests + lock file so we can do a fresh prod-only install.
+# This guarantees every package (hoisted or workspace-local) is present —
+# copying node_modules from the builder misses workspace-specific subdirs.
+COPY package.json package-lock.json ./
+COPY shared/package.json ./shared/
+COPY server/package.json ./server/
+COPY extension/package.json ./extension/
 
-# Create data directory for SQLite
+RUN npm ci --ignore-scripts --omit=dev
+
+# Copy compiled output from builder
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/shared/dist ./shared/dist
+
+# Writable volume for SQLite database
 RUN mkdir -p /data && chown node:node /data
 
 USER node
