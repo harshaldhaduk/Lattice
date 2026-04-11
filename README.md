@@ -98,7 +98,7 @@ Coordination Backend (Node.js + Socket.io)
 
 ## Status
 
-Built at [Hackathon Name] — April 2026.
+Built at UTA Buildathon — April 2026.
 
 ---
 
