@@ -8,9 +8,9 @@
 
 **Invisible until necessary. Indispensable when it matters.**
 
-Momentum should feel like a seatbelt, not a dashboard. Developers shouldn't have to interact with it constantly — it runs in the background and only surfaces when something important needs attention. When a conflict is detected, it should be impossible to miss. When everything is clear, it should be invisible.
+Lattice should feel like a seatbelt, not a dashboard. Developers shouldn't have to interact with it constantly — it runs in the background and only surfaces when something important needs attention. When a conflict is detected, it should be impossible to miss. When everything is clear, it should be invisible.
 
-Secondary principle: **Context over interruption.** Rather than blocking an edit with a modal, Momentum gives developers context and options. They always have the final say.
+Secondary principle: **Context over interruption.** Rather than blocking an edit with a modal, Lattice gives developers context and options. They always have the final say.
 
 ---
 
@@ -18,7 +18,7 @@ Secondary principle: **Context over interruption.** Rather than blocking an edit
 
 ### 1. Session Panel (VS Code Sidebar)
 
-The primary Momentum UI lives in the VS Code sidebar. It has three tabs:
+The primary Lattice UI lives in the VS Code sidebar. It has three tabs:
 
 **Tab 1: Presence**
 - List of all active team members with online/away status
@@ -57,7 +57,7 @@ When a developer (or agent) attempts to save changes to a file that is in confli
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  ⚠ Momentum: Potential Conflict Detected                              │
+│  ⚠ Lattice: Potential Conflict Detected                              │
 │                                                                       │
 │  @bob's agent is modifying verifyToken() for task:                    │
 │  "Add rate limiting to auth endpoints"                                │
@@ -96,10 +96,10 @@ A real-time feed showing agent-to-agent communications during active sessions:
 
 ### 5. Session Summary (on sync to GitHub)
 
-When a developer syncs to GitHub at the end of a session, Momentum generates a structured commit message:
+When a developer syncs to GitHub at the end of a session, Lattice generates a structured commit message:
 
 ```
-feat(auth): OAuth2 support + rate limiting [Momentum Session #117]
+feat(auth): OAuth2 support + rate limiting [Lattice Session #117]
 
 Coordinated changes across 3 developers and 4 AI agents:
 - alice: Refactored verifyToken() and createSession() for OAuth2 scope support
@@ -111,7 +111,7 @@ Conflicts auto-resolved: 1 (agent negotiation)
 Human approvals: 1 (verifyToken signature change)
 Shadow patches applied: 3
 
-Session duration: 2h 14m | Momentum build-mode session
+Session duration: 2h 14m | Lattice build-mode session
 ```
 
 ---
@@ -122,25 +122,25 @@ Session duration: 2h 14m | Momentum build-mode session
 
 ```
 1. Developer opens VS Code
-2. Clicks Momentum icon in sidebar
+2. Clicks Lattice icon in sidebar
 3. Sees "No active session" state
 4. Enters session code (shared by team lead) or creates new session
 5. Presence panel populates with team members
 6. Developer submits their current task intent via the text field
 7. System parses intent and creates Intent Node
-8. Developer starts coding — Momentum monitors in background
+8. Developer starts coding — Lattice monitors in background
 ```
 
 ### Flow 2: Agent Conflict Caught
 
 ```
 1. Developer's AI agent requests a file write to auth/middleware.ts
-2. Momentum intercepts the write request (via MCP tool hook)
+2. Lattice intercepts the write request (via MCP tool hook)
 3. Conflict engine finds active intent from bob's agent on same file/function
 4. Returns CONFLICT verdict
 5. Agents negotiate automatically
 6. Resolution: agent-alice proceeds; agent-bob is notified to wait
-7. Bob sees notification in Momentum panel: "Your agent deferred: reason X"
+7. Bob sees notification in Lattice panel: "Your agent deferred: reason X"
 8. alice's change is applied; intent node updated
 9. Bob's agent resumes with updated context
 ```
@@ -149,7 +149,7 @@ Session duration: 2h 14m | Momentum build-mode session
 
 ```
 1. Agent proposes change to shared interface (high-confidence conflict risk)
-2. Momentum stages the change as shadow patch instead of applying
+2. Lattice stages the change as shadow patch instead of applying
 3. All relevant team members see a patch notification in sidebar
 4. Developer clicks "View Patch" → sees diff preview in editor
 5. Developer clicks "Approve" → patch is applied to working tree
@@ -159,11 +159,11 @@ Session duration: 2h 14m | Momentum build-mode session
 ### Flow 4: GitHub Sync
 
 ```
-1. Team signals "session complete" in Momentum panel
-2. Momentum shows session summary: changes, conflicts resolved, patches applied
+1. Team signals "session complete" in Lattice panel
+2. Lattice shows session summary: changes, conflicts resolved, patches applied
 3. Developer reviews and edits the proposed commit message
 4. Clicks "Sync to GitHub"
-5. Momentum creates a clean commit with intent metadata
+5. Lattice creates a clean commit with intent metadata
 6. Session is archived; history available for 90 days
 ```
 

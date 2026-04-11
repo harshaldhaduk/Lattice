@@ -15,7 +15,7 @@ Claude Code, GitHub Copilot Workspace, Cursor, and Devin have moved from autocom
 AI is enabling 3-person teams to build what previously required 12. This compresses coordination timelines and amplifies the cost of collision. Coordination tooling designed for larger, slower teams breaks at this new scale and speed.
 
 **3. The MCP protocol is standardizing agent interoperability.**
-Anthropic's Model Context Protocol is rapidly becoming the standard interface for AI agents interacting with tools and systems. Momentum can expose its coordination primitives as MCP tools — making it natively interoperable with any Claude-based agent.
+Anthropic's Model Context Protocol is rapidly becoming the standard interface for AI agents interacting with tools and systems. Lattice can expose its coordination primitives as MCP tools — making it natively interoperable with any Claude-based agent.
 
 These three forces mean the team coordination problem, which was chronic and manageable before, is now acute and growing.
 
@@ -29,7 +29,7 @@ These three forces mean the team coordination problem, which was chronic and man
 **AI Coding Tools specifically: $4.9B (2024), projected $28B by 2030**
 (Source: IDC, Gartner estimates)
 
-Every software team using AI assistants is a potential Momentum customer. That is an increasingly large share of the 27 million professional developers worldwide.
+Every software team using AI assistants is a potential Lattice customer. That is an increasingly large share of the 27 million professional developers worldwide.
 
 ---
 
@@ -78,7 +78,7 @@ Once the coordination layer is established:
 1. **AI agent orchestration platforms** — sell coordination infrastructure to teams building internal AI agents (not just coding)
 2. **Code review and audit tooling** — intent tracking creates a natural audit trail for compliance-sensitive orgs
 3. **Internal developer platforms (IDP)** — enterprises building internal tooling on top of AI need coordination primitives
-4. **Remote engineering teams** — async-friendly version of Momentum for distributed teams across time zones
+4. **Remote engineering teams** — async-friendly version of Lattice for distributed teams across time zones
 
 ---
 

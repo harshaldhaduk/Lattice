@@ -1,8 +1,8 @@
-# Momentum
+# Lattice
 
 > **Build in parallel. Ship without conflict.**
 
-Momentum is an AI-native coordination layer for VS Code that lets multiple developers and their AI agents work on the same codebase simultaneously — with shared intent tracking, real-time conflict detection, and automatic agent-to-agent negotiation before a single line is written.
+Lattice is an AI-native coordination layer for VS Code that lets multiple developers and their AI agents work on the same codebase simultaneously — with shared intent tracking, real-time conflict detection, and automatic agent-to-agent negotiation before a single line is written.
 
 ---
 
@@ -14,7 +14,7 @@ Git is a record of what changed. It does not prevent two agents from making inco
 
 ## The Solution
 
-Momentum sits inside your IDE and orchestrates parallel AI-assisted development:
+Lattice sits inside your IDE and orchestrates parallel AI-assisted development:
 
 - **Intent tracking** — every task is declared before work starts
 - **Pre-write conflict detection** — changes are checked against active work before being applied
@@ -25,9 +25,9 @@ Momentum sits inside your IDE and orchestrates parallel AI-assisted development:
 ## How It Works
 
 ```
-1. Developers join a shared Momentum session in VS Code
+1. Developers join a shared Lattice session in VS Code
 2. Each registers their current task as a structured intent
-3. Before any agent writes a change → Momentum checks for conflicts
+3. Before any agent writes a change → Lattice checks for conflicts
 4. If conflict detected → agents negotiate a resolution automatically
 5. Human approves when confidence is low or stakes are high
 6. Session syncs cleanly to GitHub when done
@@ -37,13 +37,13 @@ Momentum sits inside your IDE and orchestrates parallel AI-assisted development:
 
 ```bash
 # Install the VS Code extension
-# (search "Momentum" in VS Code Extensions marketplace)
+# (search "Lattice" in VS Code Extensions marketplace)
 
 # Start the coordination server
 git clone https://github.com/Ekansh236/Monolith.git
-cd momentum/server && npm install && npm run dev
+cd lattice/server && npm install && npm run dev
 
-# Open VS Code, click the Momentum icon in the sidebar
+# Open VS Code, click the Lattice icon in the sidebar
 # Create a session and share the code with your teammates
 ```
 
@@ -82,9 +82,9 @@ Coordination Backend (Node.js + Socket.io)
 |---|---|
 | [Overview](docs/overview.md) | Project vision, pitch, and core differentiators |
 | [Problem](docs/problem.md) | Problem statement and why it matters now |
-| [Solution](docs/solution.md) | How Momentum works |
+| [Solution](docs/solution.md) | How Lattice works |
 | [Market](docs/market.md) | TAM/SAM/SOM and market timing |
-| [Competitive Landscape](docs/competitive-landscape.md) | Where Momentum sits vs. existing tools |
+| [Competitive Landscape](docs/competitive-landscape.md) | Where Lattice sits vs. existing tools |
 | [Customers](docs/customers.md) | Target personas and customer journey |
 | [Go-to-Market](docs/go-to-market.md) | GTM strategy and launch plan |
 | [Monetization](docs/monetization.md) | Pricing tiers and revenue model |
@@ -102,4 +102,4 @@ Built at [Hackathon Name] — April 2026.
 
 ---
 
-*Momentum: The coordination layer for teams that build fast with AI.*
+*Lattice: The coordination layer for teams that build fast with AI.*

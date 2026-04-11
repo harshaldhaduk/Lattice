@@ -1,6 +1,6 @@
 # Monetization Strategy
 
-## How Momentum Builds a Sustainable, Scalable Revenue Model
+## How Lattice Builds a Sustainable, Scalable Revenue Model
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Free for small teams. Paid for teams that grow and depend on it.**
 
-Momentum follows a product-led growth (PLG) model where free tiers drive adoption and viral growth, while paid tiers capture value from teams that have made Momentum part of their critical workflow.
+Lattice follows a product-led growth (PLG) model where free tiers drive adoption and viral growth, while paid tiers capture value from teams that have made Lattice part of their critical workflow.
 
 The hosted backend — session management, agent communication bus, intent graph persistence, and GitHub sync — is the monetizable layer. The VS Code extension is open-source and free.
 
@@ -23,7 +23,7 @@ The hosted backend — session management, agent communication bus, intent graph
 - Up to 3 team members per session
 - Session history: 7 days
 - Community support
-- Momentum branding on session exports
+- Lattice branding on session exports
 
 **Goal:** Maximum adoption. This tier should be genuinely useful. Students, hackathon teams, and individuals should never need to upgrade unless they grow.
 
@@ -99,10 +99,10 @@ The hosted backend — session management, agent communication bus, intent graph
 ## Additional Revenue Streams (Year 2+)
 
 ### API Access
-Charge per agent-coordination API call for teams building custom agents on Momentum's infrastructure. Pricing: $0.002–$0.01 per coordination event.
+Charge per agent-coordination API call for teams building custom agents on Lattice's infrastructure. Pricing: $0.002–$0.01 per coordination event.
 
 ### Marketplace (Year 3)
-Allow third-party developers to build Momentum plugins (integration with Jira, custom conflict resolution logic, specialized agent protocols). Take 20% platform fee.
+Allow third-party developers to build Lattice plugins (integration with Jira, custom conflict resolution logic, specialized agent protocols). Take 20% platform fee.
 
 ### Data Insights (Opt-in, Anonymized)
 Enterprise customers pay for aggregate team productivity insights derived from intent graph data — e.g., "your team spends 18% of coordination time on auth-related conflicts." Privacy-preserving; opt-in only.
@@ -117,6 +117,6 @@ Enterprise customers pay for aggregate team productivity insights derived from i
 | Cursor Pro | $20/seat/mo | AI code editing |
 | Linear | $8/seat/mo | Task management |
 | VS Code Live Share | Free | Pair programming |
-| **Momentum Team Pro** | **$20/seat/mo** | **AI coordination layer** |
+| **Lattice Team Pro** | **$20/seat/mo** | **AI coordination layer** |
 
-At $20/seat, Momentum is priced at parity with Cursor — the AI coding tool it complements. The value proposition is clear: if you're already paying $20/seat for an AI that writes code, you should pay another $20/seat to make sure that code doesn't collide with your teammates'.
+At $20/seat, Lattice is priced at parity with Cursor — the AI coding tool it complements. The value proposition is clear: if you're already paying $20/seat for an AI that writes code, you should pay another $20/seat to make sure that code doesn't collide with your teammates'.

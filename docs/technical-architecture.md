@@ -1,6 +1,6 @@
 # Technical Architecture
 
-## System Design for Momentum's Coordination Layer
+## System Design for Lattice's Coordination Layer
 
 ---
 
@@ -19,7 +19,7 @@ We use proven, boring technology in the right places and apply LLM intelligence 
 │                        DEVELOPER WORKSTATION                        │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │                  VS Code + Momentum Extension                 │  │
+│  │                  VS Code + Lattice Extension                 │  │
 │  │                                                              │  │
 │  │  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
 │  │  │  Presence   │  │ Intent Panel │  │  Patch Staging   │   │  │
@@ -290,28 +290,28 @@ The orchestrator produces one of:
 
 ### 6. MCP Tool Server
 
-Exposes Momentum's coordination primitives as MCP tools, allowing any MCP-compatible AI agent (Claude Code, etc.) to integrate natively:
+Exposes Lattice's coordination primitives as MCP tools, allowing any MCP-compatible AI agent (Claude Code, etc.) to integrate natively:
 
 ```typescript
-// MCP tools exposed by Momentum
+// MCP tools exposed by Lattice
 const tools = [
   {
-    name: 'momentum_register_intent',
+    name: 'lattice_register_intent',
     description: 'Register a coding intent before starting work',
     inputSchema: { task: string, files: string[], priority?: string }
   },
   {
-    name: 'momentum_check_edit',  
+    name: 'lattice_check_edit',  
     description: 'Check if a proposed file edit is safe to apply',
     inputSchema: { filePath: string, diff: string, intentId: string }
   },
   {
-    name: 'momentum_propose_patch',
+    name: 'lattice_propose_patch',
     description: 'Stage a change as a shadow patch for human review',
     inputSchema: { filePath: string, diff: string, reason: string }
   },
   {
-    name: 'momentum_get_session_context',
+    name: 'lattice_get_session_context',
     description: 'Get current session state: who is working on what',
     inputSchema: { sessionId: string }
   }

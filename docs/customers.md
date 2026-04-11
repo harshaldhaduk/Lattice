@@ -6,7 +6,7 @@
 
 ## ICP Summary
 
-Momentum's ideal customer is a **small, fast-moving team building software with AI agents, under time pressure, where coordination friction directly reduces output quality.**
+Lattice's ideal customer is a **small, fast-moving team building software with AI agents, under time pressure, where coordination friction directly reduces output quality.**
 
 ---
 
@@ -19,9 +19,9 @@ Momentum's ideal customer is a **small, fast-moving team building software with 
 
 - **Who:** CS student or early career developer, 20–26, leading a hackathon team of 3–4
 - **Tools:** VS Code, Claude Code or Cursor, GitHub
-- **Pain:** Everyone is building in parallel, AI agents are writing code fast, and the team keeps stomping on each other's changes. Merge conflicts show up at 3am and kill momentum.
+- **Pain:** Everyone is building in parallel, AI agents are writing code fast, and the team keeps stomping on each other's changes. Merge conflicts show up at 3am and kill the team's flow.
 - **Goal:** Ship a working demo in 24 hours without wasting time on coordination
-- **Trigger to adopt:** Hears about Momentum from another team or finds it featured in a hackathon toolkit
+- **Trigger to adopt:** Hears about Lattice from another team or finds it featured in a hackathon toolkit
 - **Success metric:** Zero merge conflicts during the sprint; clean demo at submission
 
 ---
@@ -33,7 +33,7 @@ Momentum's ideal customer is a **small, fast-moving team building software with 
 - **Tools:** VS Code / Cursor, Claude Code, GitHub, Linear
 - **Pain:** The team is moving fast with AI help, but coordination is ad-hoc. Slack messages like "don't touch auth today" are the current solution. It's not scaling.
 - **Goal:** Maintain development velocity as the team grows and AI agents become more autonomous
-- **Trigger to adopt:** Hits a painful merge incident that costs a day of recovery; discovers Momentum in a dev tools newsletter or on HN
+- **Trigger to adopt:** Hits a painful merge incident that costs a day of recovery; discovers Lattice in a dev tools newsletter or on HN
 - **Success metric:** Reduction in time-to-deploy and inter-developer friction; improved confidence in parallel AI workstreams
 
 ---
@@ -45,7 +45,7 @@ Momentum's ideal customer is a **small, fast-moving team building software with 
 - **Tools:** Claude Code, multiple AI agent sessions, VS Code, custom scripts
 - **Pain:** Already uses AI agents heavily but manages coordination manually through comments, file naming conventions, and context switching. Deeply frustrated by the lack of tooling.
 - **Goal:** Run multiple AI agents simultaneously without babysitting each one for conflicts
-- **Trigger to adopt:** Actively searching for this solution; highly likely to find Momentum via Twitter/X or Hacker News
+- **Trigger to adopt:** Actively searching for this solution; highly likely to find Lattice via Twitter/X or Hacker News
 - **Success metric:** Ability to run 3–4 agents in parallel with <5% collision rate; reduced manual oversight time
 
 ---
@@ -57,7 +57,7 @@ Momentum's ideal customer is a **small, fast-moving team building software with 
 - **Tools:** GitHub Classroom, VS Code, various AI tools
 - **Pain:** Group projects devolve into "who has the latest version" chaos. Students don't know how to use Git properly and AI assistance makes the problem worse (AI agents commit directly to main).
 - **Goal:** Give students a real-world parallel development experience with guardrails
-- **Trigger to adopt:** Hears about Momentum via a teaching tools newsletter or a colleague; tries it for a project course
+- **Trigger to adopt:** Hears about Lattice via a teaching tools newsletter or a colleague; tries it for a project course
 - **Success metric:** Fewer broken builds in student repos; students learn coordination concepts naturally
 
 ---
@@ -78,7 +78,7 @@ Momentum's ideal customer is a **small, fast-moving team building software with 
 
 ```
 AWARENESS
-Developer hears about Momentum via:
+Developer hears about Lattice via:
 - Hackathon toolkit / sponsor page
 - Twitter/X or Hacker News post
 - Colleague recommendation
@@ -91,13 +91,13 @@ ACTIVATION
 - First conflict caught automatically → "oh wow, that actually works"
 
 RETENTION
-- Uses Momentum in every team coding session
+- Uses Lattice in every team coding session
 - Adds it to their project's onboarding README
 - Notices reduction in merge conflicts and duplicate work
 
 EXPANSION
 - Team grows → adds seats
-- Uses Momentum for more projects
+- Uses Lattice for more projects
 - Requests integrations (JetBrains, Neovim, etc.)
 
 REFERRAL

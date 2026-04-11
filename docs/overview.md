@@ -1,4 +1,4 @@
-# Momentum — Project Overview
+# Lattice — Project Overview
 
 > **"The AI-native coordination layer that lets teams build together without stepping on each other."**
 
@@ -6,7 +6,7 @@
 
 ## One-Sentence Pitch
 
-Momentum is an IDE coordination layer that lets multiple developers and their AI agents work on the same codebase simultaneously — with shared intent, real-time conflict prediction, and automatic patch negotiation before a single line is written.
+Lattice is an IDE coordination layer that lets multiple developers and their AI agents work on the same codebase simultaneously — with shared intent, real-time conflict prediction, and automatic patch negotiation before a single line is written.
 
 ---
 
@@ -14,7 +14,7 @@ Momentum is an IDE coordination layer that lets multiple developers and their AI
 
 Modern software teams use Git for version control and AI agents for coding speed, but neither tool was designed for real-time parallel collaboration. When three developers and three AI agents are all touching the same codebase at once, you get merge hell, duplicated work, and broken assumptions.
 
-Momentum sits inside your IDE and orchestrates the chaos. Every agent registers its intent before writing. Every edit is checked against active work in progress. Conflicts are caught before they happen — not hours later in a PR review. And when multiple agents need to touch the same function, they negotiate a path forward automatically, escalating to humans only when necessary.
+Lattice sits inside your IDE and orchestrates the chaos. Every agent registers its intent before writing. Every edit is checked against active work in progress. Conflicts are caught before they happen — not hours later in a PR review. And when multiple agents need to touch the same function, they negotiate a path forward automatically, escalating to humans only when necessary.
 
 It's not Google Docs for code. It's not a replacement for GitHub. It's a real-time coordination runtime for teams that build fast with AI.
 
@@ -30,18 +30,18 @@ It's not Google Docs for code. It's not a replacement for GitHub. It's a real-ti
 
 ## The Solution
 
-Momentum introduces a **shared coordination layer** between your IDE, your AI agents, and your codebase:
+Lattice introduces a **shared coordination layer** between your IDE, your AI agents, and your codebase:
 
 - **Intent tracking** — every task is registered as a structured intent (what files, what goal, who owns it)
 - **Pre-write conflict detection** — before any agent writes a change, it checks for overlapping active work
 - **Agent-to-agent negotiation** — agents communicate to resolve overlap without human intervention when possible
 - **Shadow patching** — uncertain edits are staged as previews, shown to the relevant developer before being applied
 - **Human escalation** — when confidence is low or stakes are high, a human makes the call
-- **Clean GitHub sync** — once a session stabilizes, Momentum produces a clean, intentful commit history
+- **Clean GitHub sync** — once a session stabilizes, Lattice produces a clean, intentful commit history
 
 ---
 
-## Why Momentum Exists Now
+## Why Lattice Exists Now
 
 Three conditions converged to make this problem acute:
 
@@ -53,13 +53,13 @@ Three conditions converged to make this problem acute:
 
 ## Project Name
 
-**Momentum** — because we keep development moving forward, without the friction, collisions, and waiting that slow teams down.
+**Lattice** — because the product is an interconnected coordination grid: every developer and agent is a node, every intent and dependency is an edge. The name signals structure, interoperability, and strength under parallel load.
 
 ---
 
 ## Core Differentiators
 
-| Feature | GitHub | Live Share | Cursor | **Momentum** |
+| Feature | GitHub | Live Share | Cursor | **Lattice** |
 |---|---|---|---|---|
 | Real-time presence | No | Yes | Partial | Yes |
 | AI agent coordination | No | No | No | Yes |

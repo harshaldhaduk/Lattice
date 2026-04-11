@@ -98,4 +98,4 @@ The convergence of:
 
 ...means the infrastructure now exists to build something that wasn't possible 18 months ago: a coordination layer that actually understands *what developers and agents are trying to do* — and acts on that understanding before edits are written.
 
-This is the gap Momentum fills.
+This is the gap Lattice fills.

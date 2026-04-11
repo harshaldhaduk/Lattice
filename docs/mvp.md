@@ -16,10 +16,10 @@ Every feature we build must be visible in a live 3-minute demo. Features that re
 
 These six things must work perfectly in the demo:
 
-1. **Two developers join a shared Momentum session** in VS Code
+1. **Two developers join a shared Lattice session** in VS Code
 2. **Each declares an intent** (natural language task description)
 3. **One developer's AI agent attempts to edit a file** that the other agent has claimed
-4. **Momentum catches the conflict** before the write is applied
+4. **Lattice catches the conflict** before the write is applied
 5. **Agents negotiate** and one is deferred to a shadow patch
 6. **Human approves the shadow patch** and it's applied cleanly
 
@@ -121,9 +121,9 @@ Negotiation Service
 
 ### Hour 14–18: Agent Integration
 - [ ] MCP Tool Server (in-process in extension)
-- [ ] `momentum_register_intent` MCP tool
-- [ ] `momentum_check_edit` MCP tool
-- [ ] `momentum_propose_patch` MCP tool
+- [ ] `lattice_register_intent` MCP tool
+- [ ] `lattice_check_edit` MCP tool
+- [ ] `lattice_propose_patch` MCP tool
 - [ ] Test with real Claude Code session
 
 ### Hour 18–22: Negotiation + Polish

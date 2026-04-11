@@ -1,6 +1,6 @@
 # Project Naming
 
-## Recommended Project Name: Momentum
+## Recommended Project Name: Lattice
 
 ---
 
@@ -8,7 +8,7 @@
 
 | # | Name | Concept | Pros | Cons |
 |---|---|---|---|---|
-| 1 | **Momentum** | Development momentum — keeps building moving without friction | Already the repo name. Action-oriented. Easy to say and spell. Domain-available variants. | Generic in other contexts |
+| 1 | **Momentum** | Development momentum — keeps building moving without friction | Action-oriented. Easy to say and spell. Domain-available variants. | Generic in other contexts |
 | 2 | **Weave** | Weaving multiple agents' work together | Elegant. Short. Metaphor for coordination. | Can imply just merging files |
 | 3 | **Coflow** | Co-development + flow state | Captures parallel + smooth | Less memorable |
 | 4 | **Lattice** | Structured coordination grid | Technical feel, premium sound | Abstract, less self-explanatory |
@@ -21,16 +21,16 @@
 
 ---
 
-## Recommended Final Name: **Momentum**
+## Recommended Final Name: **Lattice**
 
-### Why Momentum
+### Why Lattice
 
-1. **Already the repo name** — no rename needed, no friction
-2. **Captures the core value prop** — we keep development moving without the friction of conflicts and merge hell
-3. **Action-oriented** — sounds like something that helps you *build*, not a tool that slows you down
-4. **Memorable and pronounceable** — one word, four syllables, no ambiguity
-5. **Domain available** — `getmomentum.dev`, `usemomentum.io`, `buildwithmomentum.com` all available
-6. **Tagline writes itself:** *"Keep Building."* or *"Build Together, Without Breaking Each Other."*
+1. **Structurally evocative** — a lattice is an interconnected grid of nodes; exactly the right metaphor for a coordination layer linking multiple developers and agents
+2. **Premium, technical feel** — sounds like infrastructure, not a toy; fits the "serious dev tooling" category
+3. **Memorable and pronounceable** — one word, two syllables, no ambiguity
+4. **Differentiated** — no major dev tool currently uses this name
+5. **Domain available** — `getlattice.dev`, `uselattice.io`, `lattice.build` all available
+6. **Tagline writes itself:** *"Build in parallel. Ship without conflict."*
 
 ---
 
@@ -47,7 +47,7 @@
 ## GitHub Repo Description
 
 ```
-Momentum — AI-native coordination layer for parallel development. 
+Lattice — AI-native coordination layer for parallel development. 
 Intent tracking, real-time conflict detection, and agent-to-agent 
 negotiation inside VS Code. Build together without breaking each other.
 ```

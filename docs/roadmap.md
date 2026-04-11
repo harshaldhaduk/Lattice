@@ -55,7 +55,7 @@
 ## Phase 2: Team Adoption (Months 3–9)
 
 **Timeline:** Months 3–9 post-hackathon  
-**Goal:** $10K MRR. Establish Momentum as the standard for AI-native team development.
+**Goal:** $10K MRR. Establish Lattice as the standard for AI-native team development.
 
 ### Engineering
 - [ ] Multi-language AST support: Go, Python, Rust, Java
@@ -77,7 +77,7 @@
 - [ ] Product Hunt launch (target Product of the Day)
 - [ ] YC / Techstars partnership: free Pro for all cohort companies
 - [ ] Developer influencer program (5 creators, 50K+ combined audience)
-- [ ] Case study: publish "How [Team] shipped X in Y days with Momentum"
+- [ ] Case study: publish "How [Team] shipped X in Y days with Lattice"
 
 **Success criteria:** $10K MRR, 5,000 MAU, 200 paying teams.
 
@@ -101,7 +101,7 @@
 - [ ] Enterprise admin console: org-level settings, team hierarchy, billing
 - [ ] Custom coordination policies: fine-grained rules by team, project, file type
 - [ ] Integration marketplace: Jira, Linear, GitHub Projects, Notion sync
-- [ ] Momentum for CI/CD: run coordination checks in automated pipelines
+- [ ] Lattice for CI/CD: run coordination checks in automated pipelines
 
 ### Distribution
 - [ ] Hire first SDR (Sales Development Rep)
@@ -115,18 +115,18 @@
 
 ## Phase 4: Coordination Infrastructure Layer (Year 2+)
 
-**Long-term vision:** Momentum becomes the coordination middleware layer for AI-native software development — not just for coding, but for any team-based AI workflow.
+**Long-term vision:** Lattice becomes the coordination middleware layer for AI-native software development — not just for coding, but for any team-based AI workflow.
 
 ### Strategic Expansions
 
 **AI Agent Marketplace**
-Open an agent store where teams can plug in specialized coordination agents: security review agents, performance analysis agents, documentation agents. Momentum provides the coordination substrate; third parties build on top.
+Open an agent store where teams can plug in specialized coordination agents: security review agents, performance analysis agents, documentation agents. Lattice provides the coordination substrate; third parties build on top.
 
 **Cross-Repository Coordination**
 Extend beyond single repos: coordinate across microservices, monorepos, and multi-team projects. Become the system of record for organizational-level AI agent activity.
 
 **Async / Time-Zone Mode**
-"Handoff Mode" for distributed teams: when Alice ends her session, she leaves structured context for Bob to pick up — intent notes, in-progress patches, decisions made. Momentum becomes the async coordination layer for remote-first teams.
+"Handoff Mode" for distributed teams: when Alice ends her session, she leaves structured context for Bob to pick up — intent notes, in-progress patches, decisions made. Lattice becomes the async coordination layer for remote-first teams.
 
 **AI-Native Code Review**
 Leverage accumulated intent history to power smarter code review: instead of reviewing a diff, review whether the change matches the declared intent, and whether it avoids known coordination anti-patterns.

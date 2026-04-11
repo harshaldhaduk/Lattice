@@ -1,6 +1,6 @@
 # Agent Coordination Protocol
 
-## How Momentum Enables AI Agents to Collaborate Without Collision
+## How Lattice Enables AI Agents to Collaborate Without Collision
 
 ---
 
@@ -13,7 +13,7 @@ AI coding agents (Claude Code, Cursor, Codex, etc.) are powerful but context-bli
 - What the intent or goal of another agent's task is
 - Whether their proposed change will conflict with work in progress
 
-Momentum solves this by giving every agent access to a shared coordination layer through **three integration mechanisms**:
+Lattice solves this by giving every agent access to a shared coordination layer through **three integration mechanisms**:
 
 1. **MCP tools** (for Claude Code and any MCP-compatible agent)
 2. **REST API** (for agents that can make HTTP calls)
@@ -21,7 +21,7 @@ Momentum solves this by giving every agent access to a shared coordination layer
 
 ---
 
-## The Agent Lifecycle in Momentum
+## The Agent Lifecycle in Lattice
 
 Every agent-driven task follows this lifecycle:
 
@@ -31,10 +31,10 @@ REGISTER → CHECK → EXECUTE or STAGE → COMMUNICATE → COMPLETE
 
 ### Phase 1: REGISTER — Declare Intent Before Starting
 
-Before an agent begins a task, it registers its intent with Momentum:
+Before an agent begins a task, it registers its intent with Lattice:
 
 ```
-Tool: momentum_register_intent
+Tool: lattice_register_intent
 Input: {
   "task": "Refactor auth middleware to support OAuth2 scopes",
   "files": ["src/auth/middleware.ts", "src/auth/types.ts"],
@@ -60,7 +60,7 @@ The intent is broadcast to all session participants in real time. Other agents a
 Before applying any file change, the agent calls:
 
 ```
-Tool: momentum_check_edit
+Tool: lattice_check_edit
 Input: {
   "intentId": "intent_017",
   "filePath": "src/auth/middleware.ts",
@@ -86,15 +86,15 @@ Response: {
 
 ### Phase 3: EXECUTE or STAGE — Based on Verdict
 
-**If `SAFE`:** Agent applies the change directly and notifies Momentum:
+**If `SAFE`:** Agent applies the change directly and notifies Lattice:
 ```
-Tool: momentum_complete_edit
+Tool: lattice_complete_edit
 Input: { "intentId": "intent_017", "filePath": "...", "changeApplied": true }
 ```
 
 **If `REVIEW`:** Agent stages the change as a shadow patch:
 ```
-Tool: momentum_propose_patch
+Tool: lattice_propose_patch
 Input: {
   "intentId": "intent_017",
   "filePath": "src/auth/middleware.ts",
@@ -110,7 +110,7 @@ Response: { "patchId": "patch_042", "status": "pending", "notifiedParticipants":
 
 ### Phase 4: COMMUNICATE — Agent-to-Agent Negotiation
 
-When a conflict is detected, Momentum's negotiation orchestrator:
+When a conflict is detected, Lattice's negotiation orchestrator:
 
 1. **Collects context** from both agents:
    - Agent A's intent, proposed diff, and reasoning
@@ -120,7 +120,7 @@ When a conflict is detected, Momentum's negotiation orchestrator:
 ```json
 {
   "type": "NEGOTIATION_REQUEST",
-  "from": "momentum-orchestrator",
+  "from": "lattice-orchestrator",
   "conflict": {
     "function": "verifyToken",
     "agentA": { "intent": "Add OAuth2 scope param to verifyToken", "owner": "alice" },
@@ -158,7 +158,7 @@ When a conflict is detected, Momentum's negotiation orchestrator:
 When an agent finishes its task:
 
 ```
-Tool: momentum_complete_intent
+Tool: lattice_complete_intent
 Input: { "intentId": "intent_017", "summary": "Refactored verifyToken and createSession for OAuth2 scope support. Added scope?: string[] parameter to both functions." }
 ```
 
@@ -206,10 +206,10 @@ Format your response as JSON: { "resolution": "...", "reasoning": "...", "action
 
 ## Workspace Memory
 
-Momentum maintains a **shared workspace memory** — a persistent log of decisions, resolutions, and applied patches that any agent can query for context:
+Lattice maintains a **shared workspace memory** — a persistent log of decisions, resolutions, and applied patches that any agent can query for context:
 
 ```
-Tool: momentum_get_session_context
+Tool: lattice_get_session_context
 Response: {
   "activeIntents": [...],
   "recentDecisions": [
@@ -234,11 +234,11 @@ This prevents agents from re-litigating resolved conflicts and gives late-joinin
 
 ## Integration with Monolith RLM
 
-For teams using Claude Code with the Monolith RLM framework (recursive reasoning over large contexts), Momentum's MCP tools integrate natively:
+For teams using Claude Code with the Monolith RLM framework (recursive reasoning over large contexts), Lattice's MCP tools integrate natively:
 
-- Momentum's `momentum_get_session_context` provides the RLM root LLM with the current coordination state
+- Lattice's `lattice_get_session_context` provides the RLM root LLM with the current coordination state
 - The intent graph becomes part of the RLM's reasoning context
-- RLM's persistent thread memory can store Momentum session summaries for cross-session continuity
+- RLM's persistent thread memory can store Lattice session summaries for cross-session continuity
 - This combination allows Claude Code agents using RLM to reason about coordination history across multiple sessions — not just within the current one
 
 ---

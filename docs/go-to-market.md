@@ -1,36 +1,36 @@
 # Go-to-Market Strategy
 
-## How Momentum Reaches, Converts, and Retains Customers
+## How Lattice Reaches, Converts, and Retains Customers
 
 ---
 
 ## GTM Philosophy
 
-Momentum is a **product-led growth (PLG)** business with a viral, community-driven acquisition loop.
+Lattice is a **product-led growth (PLG)** business with a viral, community-driven acquisition loop.
 
 The core GTM insight: **hackathon teams are our R&D lab, our case study factory, and our distribution channel simultaneously.**
 
-A team that wins (or places well at) a hackathon using Momentum becomes a walking endorsement. They tell the next team. That team tells the next. Dev tools adoption spreads fastest through peer networks, not ads.
+A team that wins (or places well at) a hackathon using Lattice becomes a walking endorsement. They tell the next team. That team tells the next. Dev tools adoption spreads fastest through peer networks, not ads.
 
 ---
 
 ## Phase 1: Hackathon Community Wedge (Months 0–6)
 
 ### Goal
-Establish Momentum as the go-to tool for collaborative AI coding at hackathons. Create enough real-world demos and success stories to drive organic growth.
+Establish Lattice as the go-to tool for collaborative AI coding at hackathons. Create enough real-world demos and success stories to drive organic growth.
 
 ### Tactics
 
 **1. Official Hackathon Partnerships**
 - Partner with 10–15 major hackathons (HackMIT, TreeHacks, HackNYU, PennApps, MHacks, etc.) as a featured tool/sponsor
 - Provide free Pro accounts to all participants
-- Run a "Best Use of Momentum" side prize ($500–$1000) to incentivize adoption
+- Run a "Best Use of Lattice" side prize ($500–$1000) to incentivize adoption
 - Offer a post-hackathon retrospective write-up in exchange for a case study
 
 **2. Discord and Slack Community Presence**
 - Actively participate in developer Discord communities (Buildspace, AI Tinkerers, hackathon-specific servers)
-- Create a dedicated Momentum Discord for feedback and community support
-- Post weekly "What we shipped with Momentum" highlight threads
+- Create a dedicated Lattice Discord for feedback and community support
+- Post weekly "What we shipped with Lattice" highlight threads
 
 **3. VS Code Marketplace Launch**
 - Optimize the VS Code extension listing (keywords: multiplayer, AI, collaboration, coordination)
@@ -52,12 +52,12 @@ Establish Momentum as the go-to tool for collaborative AI coding at hackathons. 
 ## Phase 2: Startup Ecosystem Expansion (Months 6–18)
 
 ### Goal
-Convert hackathon users into paying startup teams. Establish Momentum as standard infrastructure for early-stage companies building with AI.
+Convert hackathon users into paying startup teams. Establish Lattice as standard infrastructure for early-stage companies building with AI.
 
 ### Tactics
 
 **1. YC / Accelerator Partnerships**
-- Offer free Momentum Pro to YC, Techstars, and On Deck cohorts
+- Offer free Lattice Pro to YC, Techstars, and On Deck cohorts
 - Position as: "The coordination layer for AI-native founding teams"
 - Leverage founder networks for word-of-mouth
 
@@ -97,7 +97,7 @@ Expand from founding teams to full engineering teams. Build enterprise-grade fea
 
 **3. API and Platform Play**
 - Open the agent coordination API to third-party integrations
-- Allow enterprises to connect internal AI agents to Momentum's coordination layer
+- Allow enterprises to connect internal AI agents to Lattice's coordination layer
 - Position as the coordination middleware layer for AI-native engineering platforms
 
 ---
@@ -122,7 +122,7 @@ Expand from founding teams to full engineering teams. Build enterprise-grade fea
 - **Activation rate:** % of installs that create a session within 7 days
 - **Team formation rate:** % of sessions that have 2+ members
 - **Conflict prevention rate:** # of conflicts caught pre-write per session
-- **Session retention:** % of teams that use Momentum in 3+ sessions
+- **Session retention:** % of teams that use Lattice in 3+ sessions
 - **Viral coefficient:** Average number of new users per active team member
 
 ---
