@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mock the db module before importing conflict ──────────────────────────────
-const mockAll = vi.fn<() => unknown[]>(() => []);
+const mockAll = vi.fn(() => [] as unknown[]);
 const mockPrepare = vi.fn(() => ({ all: mockAll }));
 
 vi.mock('../db', () => ({

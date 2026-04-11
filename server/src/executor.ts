@@ -101,9 +101,43 @@ export async function spawnCodingAgent(
   }
 }
 
+function resolveClaudePath(): string {
+  // Explicit override wins only if non-empty
+  const override = process.env.CLAUDE_PATH?.trim();
+  if (override) return override;
+
+  // Try to find claude on PATH right now (server's PATH may differ from user shell)
+  try {
+    const found = execSync('which claude', { encoding: 'utf8', timeout: 5000 }).trim();
+    if (found) return found;
+  } catch {}
+  try {
+    const found = execSync('command -v claude', { encoding: 'utf8', timeout: 5000 }).trim();
+    if (found) return found;
+  } catch {}
+
+  // Common install locations
+  const candidates = [
+    '/usr/local/bin/claude',
+    `${process.env.HOME}/.local/bin/claude`,
+    `${process.env.HOME}/.npm-global/bin/claude`,
+    '/opt/homebrew/bin/claude',
+  ];
+  for (const c of candidates) {
+    try { execSync(`test -x "${c}"`, { stdio: 'ignore' }); return c; } catch {}
+  }
+
+  return 'claude'; // last resort
+}
+
 function runClaude(prompt: string, cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const claudeCmd = process.env.CLAUDE_PATH ?? 'claude';
+    const claudeCmd = resolveClaudePath();
+
+    if (!claudeCmd) {
+      reject(new Error('claude CLI not found. Install it: npm install -g @anthropic-ai/claude-code'));
+      return;
+    }
 
     // claude -p runs non-interactively and exits when done
     const proc = spawn(claudeCmd, ['-p', prompt], {

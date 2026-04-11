@@ -16,7 +16,7 @@ export async function decomposeTask(prompt: string, repoContext?: string): Promi
   } catch (err: any) {
     // Fall back to mock if API is unavailable (no credits, no key, network issue)
     const msg = err?.message ?? String(err);
-    if (msg.includes('credit') || msg.includes('401') || msg.includes('API key') || msg.includes('billing')) {
+    if (msg.includes('credit') || msg.includes('401') || msg.includes('API key') || msg.includes('billing') || msg.includes('404') || msg.includes('not_found')) {
       console.warn('Anthropic API unavailable, using mock planner:', msg.split('\n')[0]);
       return decomposeWithMock(prompt);
     }
@@ -30,7 +30,7 @@ async function decomposeWithClaude(prompt: string, repoContext?: string): Promis
   const context = repoContext ? `\nRepo context: ${repoContext}` : '';
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-haiku-20241022',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     messages: [{
       role: 'user',
