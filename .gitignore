@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+*.vsix
+.env
+.env.local
+*.db
+*.db-journal
+.DS_Store

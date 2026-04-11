@@ -1,0 +1,87 @@
+{
+  "name": "lattice-vscode",
+  "displayName": "Lattice",
+  "description": "AI-native coordination layer for parallel development teams",
+  "version": "0.0.1",
+  "publisher": "lattice",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "keywords": [
+    "collaboration",
+    "AI",
+    "multiplayer",
+    "coordination",
+    "agents"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "lattice.createSession",
+        "title": "Lattice: Create Session"
+      },
+      {
+        "command": "lattice.joinSession",
+        "title": "Lattice: Join Session"
+      },
+      {
+        "command": "lattice.registerIntent",
+        "title": "Lattice: Register Intent"
+      },
+      {
+        "command": "lattice.endSession",
+        "title": "Lattice: End Session"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "lattice-sidebar",
+          "title": "Lattice",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "lattice-sidebar": [
+        {
+          "type": "webview",
+          "id": "lattice.sidebarView",
+          "name": "Lattice"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Lattice",
+      "properties": {
+        "lattice.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:3001",
+          "description": "Lattice coordination server URL"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@lattice/shared": "*",
+    "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.5"
+  }
+}

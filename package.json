@@ -1,0 +1,21 @@
+{
+  "name": "lattice",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "server",
+    "extension"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w extension\"",
+    "build": "npm run build -w shared && npm run build -w server && npm run build -w extension",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "concurrently": "^8.2.2"
+  },
+  "overrides": {
+    "@types/node": "^22.0.0"
+  }
+}
