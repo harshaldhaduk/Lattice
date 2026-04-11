@@ -88,10 +88,12 @@ We use proven, boring technology in the right places and apply LLM intelligence 
 
 **Key VS Code APIs used:**
 - `vscode.window.createWebviewPanel` — sidebar UI
-- `vscode.workspace.onDidSaveTextDocument` — file save interception
+- `vscode.workspace.onWillSaveTextDocument` — **pre-save** interception (fires before the write; supports `waitUntil` to defer or cancel the save while the conflict check runs)
 - `vscode.languages.registerHoverProvider` — inline intent tooltips
 - `vscode.window.showInformationMessage` — conflict notification banners
 - `vscode.workspace.onDidChangeTextDocument` — live edit tracking
+
+> **Note on save interception:** `onWillSaveTextDocument` is used (not `onDidSaveTextDocument`) because it fires *before* the file is written to disk, allowing Lattice to pause the save, show a conflict warning, and let the developer choose to proceed, stage as a shadow patch, or abort — all before any bytes hit the filesystem.
 
 **Key dependencies:**
 - `socket.io-client` — WebSocket connection to backend
@@ -125,8 +127,9 @@ POST   /patches                   → Create shadow patch
 POST   /patches/:id/approve       → Approve shadow patch
 POST   /patches/:id/reject        → Reject shadow patch
 
-POST   /sync/github               → Trigger GitHub sync
-GET    /sessions/:id/summary      → Get session summary
+POST   /sessions/:id/sync         → Generate intent-annotated commit message + optional git commit
+POST   /sessions/:id/plan         → Decompose a task prompt into intent specs via Claude
+POST   /sessions/:id/execute      → Spawn parallel Claude Code agents for intent specs
 ```
 
 **WebSocket Events:**
@@ -256,7 +259,29 @@ function computeVerdict(
 
 ---
 
-### 5. Agent Negotiation Orchestrator (Claude API)
+### 5. Shadow Patch Staging Lifecycle
+
+Shadow patches are how Lattice handles uncertain or conflicting edits without blocking progress. The full lifecycle:
+
+**Storage:** A patch is a row in the `patches` table containing the unified diff, the file path, the proposer ID, and a 30-minute TTL. Diffs are stored as text — no binary blobs.
+
+**Creation path:** Either the extension's save interceptor (when a user saves a file while another participant's intent covers it) or a direct `POST /api/patches` call from an agent.
+
+**Concurrent patches on the same file:** Multiple patches on the same file are stored independently. The server does not attempt to auto-merge them — that is the negotiation orchestrator's job if they conflict. Each patch has its own `status` (pending/approved/rejected/expired).
+
+**Application:** Patches are **not** automatically applied to the working tree by the server. Instead:
+1. When a patch is approved, the VS Code extension receives a `patch:updated` WebSocket event
+2. The extension prompts the developer: "Apply this patch?" with a diff preview
+3. If confirmed, the extension writes the file content directly using VS Code's `workspace.fs.writeFile`, applying the diff client-side
+4. This avoids the server needing file system access and eliminates `git apply --cached` race conditions
+
+**Expiry:** A background sweeper (runs every 5 minutes) marks patches older than their `expires_at` as `expired` and emits `patch:updated` events so clients remove them from the UI.
+
+**Rollback:** If a patch is rejected or expires, no rollback is needed — the patch was never applied. If an approved patch is subsequently found to conflict with a later merge, that becomes a new conflict in the session and follows the standard negotiation flow.
+
+---
+
+### 6. Agent Negotiation Orchestrator (Claude API)
 
 When a `CONFLICT` verdict is returned, the orchestrator is invoked:
 

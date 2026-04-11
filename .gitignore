@@ -6,4 +6,15 @@ out/
 .env.local
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 .DS_Store
+
+# Third-party framework scaffolding — not part of Lattice source
+.claude-flow/
+.claude/agents/
+.claude/metrics/
+.claude/hooks/
+
+# Worktree scratch dirs created by executor.ts
+lattice-wt-*/

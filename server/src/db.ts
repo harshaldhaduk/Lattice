@@ -1,9 +1,11 @@
 // Uses Node.js built-in SQLite (available since Node 22.5 — no native compilation needed)
 // If you get schema errors, delete lattice.db and restart the server.
+// Set LATTICE_DB_PATH=':memory:' in tests for an isolated in-memory database.
 import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 
-const DB_PATH = path.join(__dirname, '../../lattice.db');
+const DEFAULT_DB_PATH = path.join(__dirname, '../../lattice.db');
+const DB_PATH = process.env.LATTICE_DB_PATH ?? DEFAULT_DB_PATH;
 
 export const db = new DatabaseSync(DB_PATH);
 

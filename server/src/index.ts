@@ -1,6 +1,8 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { initDb, db } from './db';
@@ -18,8 +20,34 @@ const io = new SocketServer<ClientToServerEvents, ServerToClientEvents>(httpServ
   cors: { origin: '*', methods: ['GET', 'POST', 'PATCH'] },
 });
 
+// ── Security middleware ───────────────────────────────────────────────────────
+app.use(helmet({
+  // Allow VS Code webviews to connect
+  contentSecurityPolicy: false,
+}));
+
+// General API rate limit: 120 req/min per IP
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+// Stricter limit on edit checks to prevent abuse: 30 req/min per IP
+const editCheckLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Edit check rate limit exceeded.' },
+});
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '512kb' }));
+app.use('/api', apiLimiter);
+app.use('/api/edits/check', editCheckLimiter);
 app.use('/api', createRouter(io));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
@@ -91,9 +119,24 @@ setInterval(() => {
   }
 }, 15_000);
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
-initDb();
-httpServer.listen(PORT, () => {
-  console.log(`Lattice server running on http://localhost:${PORT}`);
-  console.log(`WebSocket ready on ws://localhost:${PORT}`);
+// ── Global error handler ─────────────────────────────────────────────────────
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const status = (err as any)?.status ?? (err as any)?.statusCode ?? 500;
+  const message =
+    process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : (err as any)?.message ?? 'Internal server error';
+  console.error('Unhandled error:', err);
+  res.status(status).json({ error: message });
 });
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+export { app, httpServer };
+
+if (process.env.NODE_ENV !== 'test') {
+  initDb();
+  httpServer.listen(PORT, () => {
+    console.log(`Lattice server running on http://localhost:${PORT}`);
+    console.log(`WebSocket ready on ws://localhost:${PORT}`);
+  });
+}

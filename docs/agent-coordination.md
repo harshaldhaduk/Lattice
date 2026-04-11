@@ -84,6 +84,50 @@ Response: {
 
 ---
 
+### Verdict Reference: SAFE vs REVIEW vs CONFLICT
+
+Understanding when each verdict fires is critical to building agents that use Lattice correctly.
+
+**Scenario: Two agents on the same file, different functions**
+
+Alice's agent has registered intent on `src/auth/middleware.ts`, claiming `["verifyToken"]`.
+Bob's agent wants to modify `requireRole` in the same file.
+
+```
+Bob calls: lattice_check_edit
+  filePath: "src/auth/middleware.ts"
+  functionNames: ["requireRole"]   ← different function from Alice's claim
+
+Response: { "verdict": "REVIEW", ... }
+```
+
+**Why REVIEW, not CONFLICT?** Lattice detects that the file is claimed (triggering a file-level match), but `requireRole` does not appear in Alice's `functionNames`. There is no confirmed function-level collision. REVIEW means: *"Proceed carefully — you're in the same file as active work, but we can't prove a semantic collision yet. Consider staging as a shadow patch."*
+
+**When does the same scenario become CONFLICT?**
+
+```
+Bob calls: lattice_check_edit
+  filePath: "src/auth/middleware.ts"
+  functionNames: ["verifyToken"]   ← same function Alice claimed
+
+Response: { "verdict": "CONFLICT", ... }
+```
+
+The CONFLICT verdict fires because both agents have declared intent on the same named function. This is the signal to trigger negotiation.
+
+**REVIEW → shadow patch flow:**
+When Bob's agent receives REVIEW, the recommended path is:
+```
+Tool: lattice_propose_patch
+  filePath: "src/auth/middleware.ts"
+  diff: "..."
+  reason: "Modifying requireRole — Alice's agent is active in this file"
+```
+The patch is staged and shown to Alice's agent (and human reviewers) without blocking Bob.
+Alice's agent can approve it when `verifyToken` work is complete.
+
+---
+
 ### Phase 3: EXECUTE or STAGE — Based on Verdict
 
 **If `SAFE`:** Agent applies the change directly and notifies Lattice:

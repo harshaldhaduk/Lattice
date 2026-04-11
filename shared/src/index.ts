@@ -164,6 +164,8 @@ export const CheckEditRequestSchema = z.object({
   functionNames: z.array(z.string()).default([]),
   startLine: z.number().int().nonnegative().optional(),
   endLine: z.number().int().nonnegative().optional(),
+  /** Optional: raw file content used for AST-level function boundary extraction */
+  fileContent: z.string().optional(),
 });
 export type CheckEditRequest = z.infer<typeof CheckEditRequestSchema>;
 

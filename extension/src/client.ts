@@ -17,6 +17,7 @@ export class LatticeClient {
   public sessionId?: string;
   public participantId?: string;
   public participantName?: string;
+  public repoPath = '';
 
   private socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
   private serverUrl: string;
@@ -125,6 +126,16 @@ export class LatticeClient {
     const data = await res.json() as { specs: any[]; registered: any[] };
     if (autoRegister) await this.syncState();
     return data;
+  }
+
+  async executeplan(specs: any[], repoPath: string): Promise<{ message: string }> {
+    const res = await fetch(`${this.serverUrl}/api/sessions/${this.sessionId}/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ specs, repoPath, participantId: this.participantId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<{ message: string }>;
   }
 
   // ── Edit Checks ────────────────────────────────────────────────────────────

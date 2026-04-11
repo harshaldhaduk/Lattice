@@ -11,8 +11,13 @@ router.get('/', verifyToken, requireRole('admin'), (req: AuthRequest, res) => {
 // POST /users/login
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
-  // Demo: human will add real password validation here
-  if (email && password === 'demo') {
+  if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+    res.status(400).json({ error: 'email and password are required' });
+    return;
+  }
+  // Demo: validates against DEMO_PASSWORD env var (set to any value for local testing)
+  const demoPassword = process.env.DEMO_PASSWORD;
+  if (demoPassword && email && password === demoPassword) {
     const token = createSession('user-1', email, ['user']);
     res.json({ token });
   } else {

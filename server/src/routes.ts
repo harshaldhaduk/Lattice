@@ -5,6 +5,7 @@ import { db } from './db';
 import { checkEditConflict } from './conflict';
 import { negotiateConflict } from './negotiation';
 import { decomposeTask } from './planner';
+import { spawnCodingAgent, claudeAvailable } from './executor';
 import {
   CreateSessionRequestSchema,
   JoinSessionRequestSchema,
@@ -157,17 +158,20 @@ function getSessionState(sessionId: string): SessionState | null {
 
 // ── Zod validation middleware helper ────────────────────────────────────────
 
-function parseBody<T>(schema: { parse: (v: unknown) => T }, req: Request, res: Response): T | null {
-  try {
-    return schema.parse(req.body);
-  } catch (e) {
-    if (e instanceof ZodError) {
-      res.status(400).json({ error: 'Validation error', issues: e.issues });
-    } else {
-      res.status(400).json({ error: 'Invalid request body' });
-    }
+function parseBody<T>(
+  schema: { safeParse: (v: unknown) => { success: true; data: T } | { success: false; error: ZodError } },
+  req: Request,
+  res: Response,
+): T | null {
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      error: 'Validation error',
+      issues: result.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })),
+    });
     return null;
   }
+  return result.data;
 }
 
 // ── Router ───────────────────────────────────────────────────────────────────
@@ -577,6 +581,226 @@ export function createRouter(io: SocketServer): Router {
       console.error('Plan decomposition failed:', msg);
       res.status(500).json({ error: `AI planning failed: ${msg}` });
     }
+  });
+
+  // ── GitHub Sync ──────────────────────────────────────────────────────────
+  //
+  // Collapses all session activity into an intent-annotated commit message.
+  // Returns the proposed message + structured summary; does not push automatically
+  // (requires GITHUB_TOKEN + repoUrl to be set on the session for actual push).
+
+  router.post('/sessions/:id/sync', async (req, res) => {
+    const sessionId = req.params.id;
+    const state = getSessionState(sessionId);
+    if (!state) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const { repoPath } = req.body;
+
+    // Build intent-annotated commit message
+    const completedIntents = state.intents.filter(i => i.status === 'complete');
+    const approvedPatches = state.patches.filter(p => p.status === 'approved');
+    const participants = state.participants.map(p => p.name).join(', ');
+
+    const intentLines = completedIntents
+      .map(i => `  - [${i.actorType}] ${i.participantName}: ${i.description}`)
+      .join('\n');
+
+    const patchLines = approvedPatches
+      .map(p => `  - ${p.filePath} (by ${p.proposerName})`)
+      .join('\n');
+
+    const commitMessage = [
+      `feat: lattice session "${state.session.name}"`,
+      ``,
+      `Participants: ${participants}`,
+      ``,
+      completedIntents.length > 0 ? `Completed intents:\n${intentLines}` : null,
+      approvedPatches.length > 0 ? `\nApproved patches:\n${patchLines}` : null,
+      ``,
+      `[lattice session: ${sessionId}]`,
+    ].filter(line => line !== null).join('\n');
+
+    // If repoPath provided, attempt to create the commit
+    let committed = false;
+    let commitHash: string | undefined;
+    if (repoPath) {
+      const { execSync } = await import('child_process');
+      try {
+        // Stage all changes and commit with the generated message
+        execSync('git add -A', { cwd: repoPath, timeout: 10000 });
+        const result = execSync(
+          `git commit -m ${JSON.stringify(commitMessage)} --allow-empty`,
+          { cwd: repoPath, timeout: 10000 },
+        ).toString();
+        const hashMatch = result.match(/\[[\w./]+ ([a-f0-9]+)\]/);
+        commitHash = hashMatch?.[1];
+        committed = true;
+      } catch (err: any) {
+        // Nothing staged or git error — return the message anyway
+      }
+    }
+
+    const event = insertEvent({
+      sessionId,
+      eventType: 'system',
+      actorId: 'lattice-orchestrator',
+      actorName: 'Lattice Orchestrator',
+      message: committed
+        ? `Session synced to git (${commitHash})`
+        : `Session sync message generated (${completedIntents.length} intents, ${approvedPatches.length} patches)`,
+    });
+    io.to(sessionId).emit('event:added', event);
+
+    res.json({
+      commitMessage,
+      committed,
+      commitHash,
+      summary: {
+        participants: state.participants.length,
+        completedIntents: completedIntents.length,
+        approvedPatches: approvedPatches.length,
+        totalEvents: state.events.length,
+      },
+    });
+  });
+
+  // ── Agent Execution ──────────────────────────────────────────────────────
+
+  router.post('/sessions/:id/execute', async (req, res) => {
+    const { specs, repoPath, participantId } = req.body;
+
+    if (!specs?.length) { res.status(400).json({ error: 'specs required' }); return; }
+    if (!repoPath) { res.status(400).json({ error: 'repoPath required' }); return; }
+
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(req.params.id) as any;
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    if (!claudeAvailable()) {
+      res.status(400).json({ error: 'claude CLI not found. Install: npm install -g @anthropic-ai/claude-code' });
+      return;
+    }
+
+    const sessionId = req.params.id;
+
+    // Emit start event
+    const startEvent = insertEvent({
+      sessionId,
+      eventType: 'system',
+      actorId: 'lattice-orchestrator',
+      actorName: 'Lattice Orchestrator',
+      message: `Spawning ${specs.length} AI agent${specs.length > 1 ? 's' : ''} in parallel...`,
+    });
+    io.to(sessionId).emit('event:added', startEvent);
+
+    // Run all agents in parallel
+    const agentPromises = specs.map(async (spec: any) => {
+      // Register a new "agent" participant for this task
+      const agentParticipant = {
+        id: uuidv4(),
+        sessionId,
+        name: `AI: ${spec.description.slice(0, 35)}`,
+        actorType: 'agent' as const,
+        status: 'online' as const,
+        lastSeen: new Date().toISOString(),
+      };
+
+      db.prepare(`
+        INSERT INTO participants (id, session_id, name, actor_type, status, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(agentParticipant.id, sessionId, agentParticipant.name, 'agent', 'online', agentParticipant.lastSeen);
+
+      io.to(sessionId).emit('participant:joined', agentParticipant);
+
+      // Register intent
+      const intentId = uuidv4();
+      db.prepare(`
+        INSERT INTO intents
+          (id, session_id, participant_id, participant_name, actor_type,
+           description, file_paths, function_names, start_line, end_line,
+           status, priority, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        intentId, sessionId, agentParticipant.id, agentParticipant.name, 'agent',
+        spec.description, JSON.stringify(spec.filePaths), JSON.stringify(spec.functionNames ?? []),
+        null, null, 'in_progress', spec.priority, new Date().toISOString(),
+      );
+
+      // Spawn the agent
+      const result = await spawnCodingAgent(spec, repoPath, (msg) => {
+        const ev = insertEvent({
+          sessionId,
+          eventType: 'system',
+          actorId: agentParticipant.id,
+          actorName: agentParticipant.name,
+          message: msg,
+        });
+        io.to(sessionId).emit('event:added', ev);
+      });
+
+      // Stage result as a shadow patch (even if empty diff — records the attempt)
+      const patchId = uuidv4();
+      const now = new Date();
+      const diff = result.diff || `// Agent completed: ${spec.description}\n// No file changes detected.`;
+
+      db.prepare(`
+        INSERT INTO patches
+          (id, session_id, intent_id, proposer_id, proposer_name, file_path,
+           diff, reason, status, created_at, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        patchId, sessionId, intentId, agentParticipant.id, agentParticipant.name,
+        spec.filePaths[0] ?? 'unknown',
+        diff,
+        `AI agent implementation: ${spec.description}`,
+        'pending',
+        now.toISOString(),
+        new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24h TTL
+      );
+
+      // Mark intent complete or cancelled based on result
+      db.prepare(`UPDATE intents SET status = ?, completed_at = ? WHERE id = ?`)
+        .run(result.success ? 'complete' : 'cancelled', now.toISOString(), intentId);
+
+      const patch = {
+        id: patchId, sessionId, intentId,
+        proposerId: agentParticipant.id, proposerName: agentParticipant.name,
+        filePath: spec.filePaths[0] ?? 'unknown',
+        diff, reason: `AI agent: ${spec.description}`,
+        status: 'pending' as const,
+        createdAt: now.toISOString(),
+        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      io.to(sessionId).emit('patch:pending', patch);
+
+      const doneEvent = insertEvent({
+        sessionId,
+        eventType: result.success ? 'patch_staged' : 'system',
+        actorId: agentParticipant.id,
+        actorName: agentParticipant.name,
+        message: result.success
+          ? `Agent finished "${spec.description}" — patch ready for review`
+          : `Agent failed: ${result.error?.slice(0, 100)}`,
+        metadata: { patchId, success: result.success },
+      });
+      io.to(sessionId).emit('event:added', doneEvent);
+
+      return result;
+    });
+
+    // Don't await — respond immediately, agents run async
+    Promise.all(agentPromises).then(results => {
+      const done = insertEvent({
+        sessionId,
+        eventType: 'negotiation_resolved',
+        actorId: 'lattice-orchestrator',
+        actorName: 'Lattice Orchestrator',
+        message: `All agents done. ${results.filter(r => r.success).length}/${results.length} succeeded. Review patches in the Patches tab.`,
+      });
+      io.to(sessionId).emit('event:added', done);
+    }).catch(console.error);
+
+    res.json({ message: `${specs.length} agents spawned. Watch the Log tab for progress.` });
   });
 
   return router;

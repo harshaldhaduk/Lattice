@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build -w shared
+
+      - name: Build server
+        run: npm run build -w server
+
+      - name: Run server tests
+        run: npm test -w server
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: server/coverage/
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f server/Dockerfile -t lattice-server:${{ github.sha }} .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name lattice-test \
+            -p 3001:3001 \
+            -e ANTHROPIC_API_KEY=test \
+            lattice-server:${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:3001/health || exit 1
+          docker stop lattice-test

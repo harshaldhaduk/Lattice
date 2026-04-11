@@ -16,6 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   client = new LatticeClient(serverUrl);
 
+  // Expose workspace path for agent execution
+  const repoPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  client.repoPath = repoPath;
+
   // ── Status bar ─────────────────────────────────────────────────────────────
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = 'lattice.createSession';

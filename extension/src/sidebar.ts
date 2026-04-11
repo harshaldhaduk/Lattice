@@ -62,6 +62,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           break;
         }
+        case 'execute': {
+          const { specs } = msg;
+          const repoPath = this.client.repoPath;
+          if (!repoPath) {
+            vscode.window.showErrorMessage('No workspace folder open. Open a folder first.');
+            return;
+          }
+          this.view?.webview.postMessage({ type: 'executing', count: specs.length });
+          try {
+            const result = await this.client.executeplan(specs, repoPath);
+            vscode.window.showInformationMessage(result.message);
+          } catch (err) {
+            this.view?.webview.postMessage({ type: 'executeError', message: String(err) });
+            vscode.window.showErrorMessage(`Agent execution failed: ${err}`);
+          }
+          break;
+        }
         case 'approvePatch':
           await this.client.approvePatch(msg.patchId);
           break;
@@ -256,6 +273,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         render();
       } else if (cmd === 'clearPlan') {
         planResult = null; planError = null; render();
+      } else if (cmd === 'execute') {
+        if (planResult) {
+          vscode.postMessage({ command: 'execute', specs: planResult });
+          planResult = null;
+          render();
+        }
       } else {
         vscode.postMessage({ command: cmd });
       }
@@ -295,6 +318,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         render();
       } else if (msg.type === 'planError') {
         planning = false;
+        planError = msg.message;
+        render();
+      } else if (msg.type === 'executing') {
+        planError = null;
+        render();
+      } else if (msg.type === 'executeError') {
         planError = msg.message;
         render();
       }
@@ -369,8 +398,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           <div class="plan-result">
             <div class="plan-result-header">
               <span class="plan-result-title">AI Task Plan (\${planResult.length} intents)</span>
-              <div style="display:flex;gap:5px">
+              <div style="display:flex;gap:5px;flex-wrap:wrap">
                 <button data-cmd="registerPlan">Register All</button>
+                <button data-cmd="execute" style="background:#1a4731;color:#4ec994">⚡ Execute with AI Agents</button>
                 <button class="ghost" style="font-size:10px;padding:3px 7px" data-cmd="clearPlan">✕</button>
               </div>
             </div>
