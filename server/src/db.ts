@@ -2,13 +2,12 @@
 // If you get schema errors, delete lattice.db and restart the server.
 // Set LATTICE_DB_PATH=':memory:' in tests for an isolated in-memory database.
 //
-// We load node:sqlite via createRequire instead of a static ESM import so that
-// Vite's bundler (used by vitest) doesn't try to statically resolve the module
-// — node:sqlite was added in Node 22.5, after Vite's built-in list was frozen.
-import { createRequire } from 'node:module';
+// node:sqlite is a Node 22.5+ built-in. We use require() so that
+// Vite/vitest doesn't try to statically resolve it during test collection.
+// The server compiles as CommonJS so require is always available.
 import path from 'path';
-const _require = createRequire(import.meta.url);
-const { DatabaseSync } = _require('node:sqlite') as typeof import('node:sqlite');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
 
 const DEFAULT_DB_PATH = path.join(__dirname, '../../lattice.db');
 const DB_PATH = process.env.LATTICE_DB_PATH ?? DEFAULT_DB_PATH;
