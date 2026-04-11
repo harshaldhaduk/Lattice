@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import fs from 'fs';
 import { Server as SocketServer } from 'socket.io';
 import { db } from './db';
 import { checkEditConflict } from './conflict';
@@ -169,12 +168,9 @@ function sanitizeRepoPath(raw: unknown): { ok: true; resolved: string } | { ok: 
   if (!path.isAbsolute(resolved)) {
     return { ok: false, error: 'repoPath must resolve to an absolute path' };
   }
-  try {
-    const stat = fs.statSync(resolved);
-    if (!stat.isDirectory()) return { ok: false, error: 'repoPath must be a directory' };
-  } catch {
-    return { ok: false, error: `repoPath does not exist: ${resolved}` };
-  }
+  // Note: we intentionally do NOT check existence here — in remote deployments the
+  // repoPath exists on the client machine, not the server. Existence is validated
+  // inside spawnCodingAgent when agents actually run.
   return { ok: true, resolved };
 }
 
