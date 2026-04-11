@@ -8,8 +8,8 @@ COPY shared/package.json ./shared/
 COPY server/package.json ./server/
 COPY extension/package.json ./extension/
 
-# Install all deps (needed for workspace hoisting)
-RUN npm ci --workspace=shared --workspace=server --ignore-scripts
+# Install all workspace deps (plain npm ci ensures every hoisted package is present)
+RUN npm ci --ignore-scripts
 
 # Copy source
 COPY shared/ ./shared/
