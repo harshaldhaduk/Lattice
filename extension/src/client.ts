@@ -185,13 +185,16 @@ export class LatticeClient {
     return res.json() as Promise<ShadowPatch>;
   }
 
-  async approvePatch(patchId: string): Promise<void> {
-    await fetch(`${this.serverUrl}/api/patches/${patchId}/approve`, {
+  async approvePatch(patchId: string): Promise<ShadowPatch> {
+    const res = await fetch(`${this.serverUrl}/api/patches/${patchId}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reviewerId: this.participantId }),
     });
+    if (!res.ok) throw new Error(await res.text());
+    const patch = await res.json() as ShadowPatch;
     await this.syncState();
+    return patch;
   }
 
   async rejectPatch(patchId: string): Promise<void> {

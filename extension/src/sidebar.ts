@@ -1,5 +1,49 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import { execSync } from 'child_process';
 import { LatticeClient } from './client';
+import type { ShadowPatch } from '@lattice/shared';
+
+// ── Patch application helpers ────────────────────────────────────────────────
+
+function applyDiffToWorkspace(diff: string, repoPath: string): { ok: boolean; error?: string } {
+  const tmp = path.join(os.tmpdir(), `lattice-${Date.now()}.diff`);
+  try {
+    fs.writeFileSync(tmp, diff, 'utf8');
+    execSync(`git apply --ignore-whitespace "${tmp}"`, { cwd: repoPath, timeout: 15000 });
+    return { ok: true };
+  } catch {
+    // git apply failed — extract new-file creations from the diff directly
+    return applyNewFilesFromDiff(diff, repoPath);
+  } finally {
+    try { fs.unlinkSync(tmp); } catch {}
+  }
+}
+
+function applyNewFilesFromDiff(diff: string, repoPath: string): { ok: boolean; error?: string } {
+  // Split on per-file diff headers
+  const fileBlocks = diff.split(/(?=^diff --git )/m).filter(b => b.trim());
+  let applied = 0;
+
+  for (const block of fileBlocks) {
+    if (!block.includes('--- /dev/null')) continue; // only new-file creations
+    const targetMatch = block.match(/^\+\+\+ b\/(.+)$/m);
+    if (!targetMatch) continue;
+    const absPath = path.join(repoPath, targetMatch[1].trim());
+    const content = block.split('\n')
+      .filter(l => l.startsWith('+') && !l.startsWith('+++'))
+      .map(l => l.slice(1))
+      .join('\n');
+    fs.mkdirSync(path.dirname(absPath), { recursive: true });
+    fs.writeFileSync(absPath, content, 'utf8');
+    applied++;
+  }
+
+  if (applied > 0) return { ok: true };
+  return { ok: false, error: 'No applicable hunks found in diff' };
+}
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
@@ -79,9 +123,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           break;
         }
-        case 'approvePatch':
-          await this.client.approvePatch(msg.patchId);
+        case 'approvePatch': {
+          try {
+            const patch = await this.client.approvePatch(msg.patchId);
+            const repoPath = this.client.repoPath;
+            if (repoPath && patch.diff && !patch.diff.startsWith('//')) {
+              const result = applyDiffToWorkspace(patch.diff, repoPath);
+              if (result.ok) {
+                vscode.window.showInformationMessage(`Patch applied to workspace: ${patch.filePath}`);
+              } else {
+                vscode.window.showWarningMessage(`Patch approved but couldn't auto-apply: ${result.error}`);
+              }
+            }
+          } catch (err) {
+            vscode.window.showErrorMessage(`Approve failed: ${err}`);
+          }
           break;
+        }
         case 'rejectPatch':
           await this.client.rejectPatch(msg.patchId);
           break;
