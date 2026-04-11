@@ -140,14 +140,20 @@ function runClaude(prompt: string, cwd: string): Promise<string> {
       return;
     }
 
-    // --dangerously-skip-permissions lets Claude use Write/Bash tools without confirmation.
-    // -p (print mode) feeds the prompt non-interactively and exits when done.
-    const proc = spawn(claudeCmd, ['--dangerously-skip-permissions', '-p', prompt], {
+    // Pipe prompt via stdin — avoids shell-escaping issues with multi-line prompts
+    // that contain quotes, backticks, or newlines.
+    // --dangerously-skip-permissions: allow Write/Bash tools without confirmation prompts.
+    // --print: non-interactive, exit when done.
+    // No shell:true so the args are passed directly to the process (no shell interpolation).
+    const proc = spawn(claudeCmd, ['--dangerously-skip-permissions', '--print'], {
       cwd,
       timeout: 180_000, // 3 min max per agent
-      env: { ...process.env, TERM: 'xterm' },
-      shell: true,
+      env: { ...process.env, TERM: 'dumb' },
     });
+
+    // Write prompt to stdin then close so claude stops waiting for input
+    proc.stdin?.write(prompt + '\n');
+    proc.stdin?.end();
 
     let stdout = '';
     let stderr = '';
