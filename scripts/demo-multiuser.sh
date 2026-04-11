@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
 # Lattice multi-user demo script
-#
-# What this does:
-#   1. Creates a fresh session (or joins an existing one with -s <id>)
-#   2. Joins as "Alice" (human) — this is YOU in the extension
-#   3. Joins as "Bob" (AI agent) — simulated by this script
-#   4. Both register intents on the same file + function
-#   5. Bob triggers a conflict check → Claude negotiates a resolution
-#   6. Prints the full log of events
-#
 # Usage:
 #   ./scripts/demo-multiuser.sh                  # creates a new session
 #   ./scripts/demo-multiuser.sh -s <SESSION_ID>  # joins an existing session
@@ -34,14 +25,12 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
 log()  { echo -e "${CYAN}[lattice]${NC} $*"; }
 ok()   { echo -e "${GREEN}  ✓${NC} $*"; }
-warn() { echo -e "${YELLOW}  ⚠${NC} $*"; }
 step() { echo -e "\n${BOLD}${BLUE}── $* ──${NC}"; }
 
 # ── check server ─────────────────────────────────────────────────────────────
 step "Checking server"
 if ! curl -sf http://localhost:3001/health > /dev/null; then
-  echo -e "${RED}Server not running. Start it with:${NC}"
-  echo "  cd server && npm run dev"
+  echo -e "${RED}Server not running. Start it with:  cd server && npm run dev${NC}"
   exit 1
 fi
 ok "Server is up"
@@ -49,101 +38,115 @@ ok "Server is up"
 # ── create or use session ─────────────────────────────────────────────────────
 step "Session"
 if [ -z "$SESSION_ID" ]; then
-  SESSION=$(curl -sf -X POST "$BASE/sessions" \
+  SESSION_ID=$(curl -sf -X POST "$BASE/sessions" \
     -H "Content-Type: application/json" \
-    -d '{"name":"Multi-user Demo"}')
-  SESSION_ID=$(echo "$SESSION" | jq -r '.id')
+    -d '{"name":"Multi-user Demo"}' | jq -r '.id')
   ok "Created session: $SESSION_ID"
 else
   ok "Using existing session: $SESSION_ID"
 fi
 
-# ── join as Alice (human) ─────────────────────────────────────────────────────
-step "Alice joins (human)"
-ALICE=$(curl -sf -X POST "$BASE/sessions/$SESSION_ID/join" \
+# ── join participants ─────────────────────────────────────────────────────────
+step "Participants joining"
+ALICE_ID=$(curl -sf -X POST "$BASE/sessions/$SESSION_ID/join" \
   -H "Content-Type: application/json" \
-  -d '{"participantName":"Alice","actorType":"human"}')
-ALICE_ID=$(echo "$ALICE" | jq -r '.id')
-ok "Alice joined — id: $ALICE_ID"
+  -d '{"participantName":"Alice","actorType":"human"}' | jq -r '.id')
+ok "Alice (human) joined"
 
-# ── join as Bob (AI agent) ────────────────────────────────────────────────────
-step "Bob joins (AI agent)"
-BOB=$(curl -sf -X POST "$BASE/sessions/$SESSION_ID/join" \
+BOB_ID=$(curl -sf -X POST "$BASE/sessions/$SESSION_ID/join" \
   -H "Content-Type: application/json" \
-  -d '{"participantName":"Bob (AI)","actorType":"agent"}')
-BOB_ID=$(echo "$BOB" | jq -r '.id')
-ok "Bob joined   — id: $BOB_ID"
+  -d '{"participantName":"Bob (AI)","actorType":"agent"}' | jq -r '.id')
+ok "Bob   (agent) joined"
 
-# ── Alice registers intent ────────────────────────────────────────────────────
-step "Alice registers intent on auth/middleware.ts"
-ALICE_INTENT=$(curl -sf -X POST "$BASE/intents" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"sessionId\":      \"$SESSION_ID\",
-    \"participantId\":  \"$ALICE_ID\",
-    \"description\":    \"Add RS256 support to verifyToken\",
-    \"filePaths\":      [\"src/auth/middleware.ts\"],
-    \"functionNames\":  [\"verifyToken\"],
-    \"priority\":       \"blocking\"
-  }")
-ALICE_INTENT_ID=$(echo "$ALICE_INTENT" | jq -r '.id')
-ok "Alice intent: \"Add RS256 support to verifyToken\"  [blocking]"
+# ── register intents on the same function ────────────────────────────────────
+step "Registering intents"
+curl -sf -X POST "$BASE/intents" -H "Content-Type: application/json" -d "{
+  \"sessionId\":\"$SESSION_ID\",\"participantId\":\"$ALICE_ID\",
+  \"description\":\"Add RS256 support to verifyToken\",
+  \"filePaths\":[\"src/auth/middleware.ts\"],\"functionNames\":[\"verifyToken\"],
+  \"priority\":\"blocking\"}" > /dev/null
+ok "Alice claimed  src/auth/middleware.ts → verifyToken  [blocking]"
 
-# ── Bob registers a conflicting intent ───────────────────────────────────────
-step "Bob registers a CONFLICTING intent on the same function"
-BOB_INTENT=$(curl -sf -X POST "$BASE/intents" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"sessionId\":      \"$SESSION_ID\",
-    \"participantId\":  \"$BOB_ID\",
-    \"description\":    \"Refactor verifyToken to support multiple algorithms\",
-    \"filePaths\":      [\"src/auth/middleware.ts\"],
-    \"functionNames\":  [\"verifyToken\"],
-    \"priority\":       \"normal\"
-  }")
-BOB_INTENT_ID=$(echo "$BOB_INTENT" | jq -r '.id')
-ok "Bob intent:   \"Refactor verifyToken to support multiple algorithms\"  [normal]"
+BOB_INTENT_ID=$(curl -sf -X POST "$BASE/intents" -H "Content-Type: application/json" -d "{
+  \"sessionId\":\"$SESSION_ID\",\"participantId\":\"$BOB_ID\",
+  \"description\":\"Refactor verifyToken to support multiple algorithms\",
+  \"filePaths\":[\"src/auth/middleware.ts\"],\"functionNames\":[\"verifyToken\"],
+  \"priority\":\"normal\"}" | jq -r '.id')
+ok "Bob   claimed  src/auth/middleware.ts → verifyToken  [normal]"
 
-# ── Bob checks his edit against Alice's active intent ─────────────────────────
-step "Bob tries to save a change — conflict check fires"
-VERDICT=$(curl -sf -X POST "$BASE/edits/check" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"sessionId\":      \"$SESSION_ID\",
-    \"participantId\":  \"$BOB_ID\",
-    \"intentId\":       \"$BOB_INTENT_ID\",
-    \"filePath\":       \"src/auth/middleware.ts\",
-    \"diff\":           \"+export function verifyToken(token: string, algo = 'HS256' | 'RS256') {}\",
-    \"functionNames\":  [\"verifyToken\"]
-  }")
+# ── conflict check ────────────────────────────────────────────────────────────
+step "Bob tries to save — conflict check"
+VERDICT=$(curl -sf -X POST "$BASE/edits/check" -H "Content-Type: application/json" -d "{
+  \"sessionId\":\"$SESSION_ID\",\"participantId\":\"$BOB_ID\",
+  \"intentId\":\"$BOB_INTENT_ID\",\"filePath\":\"src/auth/middleware.ts\",
+  \"diff\":\"+export function verifyToken(token: string, algo: 'HS256'|'RS256') {}\",
+  \"functionNames\":[\"verifyToken\"]}")
 
 VERDICT_TYPE=$(echo "$VERDICT" | jq -r '.verdict')
-VERDICT_MSG=$(echo "$VERDICT" | jq -r '.message')
+VERDICT_MSG=$(echo "$VERDICT"  | jq -r '.message')
 
 echo ""
 case "$VERDICT_TYPE" in
-  SAFE)     echo -e "  Verdict: ${GREEN}SAFE${NC}    — $VERDICT_MSG" ;;
-  REVIEW)   echo -e "  Verdict: ${YELLOW}REVIEW${NC}  — $VERDICT_MSG" ;;
-  CONFLICT) echo -e "  Verdict: ${RED}CONFLICT${NC} — $VERDICT_MSG" ;;
-  *)        echo -e "  Verdict: $VERDICT_TYPE — $VERDICT_MSG" ;;
+  SAFE)     echo -e "  ${GREEN}SAFE${NC}     $VERDICT_MSG" ;;
+  REVIEW)   echo -e "  ${YELLOW}REVIEW${NC}   $VERDICT_MSG" ;;
+  CONFLICT) echo -e "  ${RED}CONFLICT${NC} $VERDICT_MSG" ;;
 esac
 
+# ── poll for negotiation result ───────────────────────────────────────────────
 if [ "$VERDICT_TYPE" = "CONFLICT" ]; then
-  warn "Conflict detected — Claude is negotiating a resolution (up to 8s)..."
+  echo ""
+  echo -e "  ${CYAN}Waiting for Claude to negotiate a resolution...${NC}"
+  echo ""
+
+  RESOLUTION=""
+  for i in $(seq 1 12); do
+    sleep 1
+    printf "  ."
+    STATE=$(curl -sf "$BASE/sessions/$SESSION_ID/state")
+    RESOLUTION=$(echo "$STATE" | jq -r '
+      .events[]
+      | select(.eventType == "negotiation_resolved")
+      | .message' | tail -1)
+    if [ -n "$RESOLUTION" ]; then
+      break
+    fi
+  done
+  echo ""
+
+  if [ -n "$RESOLUTION" ]; then
+    # Extract type and reasoning from the message  e.g. "Resolution (SEQUENCE): Alice goes first..."
+    RES_TYPE=$(echo "$RESOLUTION" | grep -oP '(?<=\().*(?=\))' || echo "RESOLVED")
+    RES_REASON=$(echo "$RESOLUTION" | sed 's/Resolution ([^)]*): //')
+
+    echo ""
+    case "$RES_TYPE" in
+      SEQUENCE) echo -e "  ${GREEN}► SEQUENCE${NC}  $RES_REASON" ;;
+      PARALLEL) echo -e "  ${GREEN}► PARALLEL${NC}  $RES_REASON" ;;
+      MERGE)    echo -e "  ${CYAN}► MERGE${NC}     $RES_REASON" ;;
+      ESCALATE) echo -e "  ${YELLOW}► ESCALATE${NC}  $RES_REASON" ;;
+      *)        echo -e "  ${GREEN}► $RES_TYPE${NC}  $RES_REASON" ;;
+    esac
+  else
+    echo -e "  ${YELLOW}No negotiation result yet — check the Log tab in the extension.${NC}"
+  fi
 fi
 
-# ── wait a moment for async negotiation to complete ──────────────────────────
-sleep 9
-
-# ── print the event log ───────────────────────────────────────────────────────
-step "Session event log"
+# ── summary ───────────────────────────────────────────────────────────────────
+echo ""
+step "Summary"
 STATE=$(curl -sf "$BASE/sessions/$SESSION_ID/state")
-echo "$STATE" | jq -r '.events[] | "  \(.createdAt[11:19])  [\(.eventType)]  \(.actorName): \(.message)"'
-
-# ── print current participants ────────────────────────────────────────────────
-step "Participants"
-echo "$STATE" | jq -r '.participants[] | "  \(.name)  [\(.actorType)]  \(.status)"'
+PARTICIPANT_COUNT=$(echo "$STATE" | jq '.participants | length')
+INTENT_COUNT=$(echo "$STATE"     | jq '.intents | length')
+EVENT_COUNT=$(echo "$STATE"      | jq '.events | length')
+echo -e "  Participants : $PARTICIPANT_COUNT"
+echo -e "  Intents      : $INTENT_COUNT"
+echo -e "  Events       : $EVENT_COUNT"
+echo ""
+echo -e "  ${BOLD}Recent events:${NC}"
+echo "$STATE" | jq -r '
+  .events[-5:][]
+  | "  \(.createdAt[11:19])  \(.actorName): \(.message)"'
 
 echo ""
-log "Session ID (paste into extension to join): ${BOLD}$SESSION_ID${NC}"
+log "Session ID (join in extension): ${BOLD}$SESSION_ID${NC}"
 echo ""
