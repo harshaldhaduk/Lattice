@@ -71,18 +71,18 @@
     }
   },
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
-    "package": "vsce package"
+    "dev": "node esbuild.mjs --watch",
+    "build": "node esbuild.mjs",
+    "package": "node esbuild.mjs && node -e \"const{execSync:e,mkdtempSync:m}=require('child_process'),{cpSync:c}=require('fs'),t=m(require('os').tmpdir()+'/lattice-pkg-');c('package.json',t+'/package.json');c('out',t+'/out',{recursive:true});c('media',t+'/media',{recursive:true});require('fs').writeFileSync(t+'/.vscodeignore','**\\n!package.json\\n!media/**\\n!out/extension.js');e('npx @vscode/vsce package --out '+process.cwd()+'/../lattice.vsix --allow-missing-repository',{cwd:t,stdio:'inherit'});\""
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@lattice/shared": "*",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "socket.io-client": "^4.7.5"
-  },
-  "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.90.0",
+    "esbuild": "^0.27.7",
+    "socket.io-client": "^4.7.5",
     "typescript": "^5.4.5"
   }
 }

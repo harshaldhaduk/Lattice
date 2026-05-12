@@ -115,7 +115,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           }
           this.view?.webview.postMessage({ type: 'executing', count: specs.length });
           try {
-            const result = await this.client.executeplan(specs, repoPath);
+            const result = await this.client.executePlan(specs, repoPath);
             vscode.window.showInformationMessage(result.message);
           } catch (err) {
             this.view?.webview.postMessage({ type: 'executeError', message: String(err) });

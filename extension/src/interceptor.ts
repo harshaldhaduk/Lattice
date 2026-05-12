@@ -48,9 +48,14 @@ export class ConflictInterceptor implements vscode.Disposable {
       ).then(async choice => {
         if (choice === 'Stage as Shadow Patch') {
           const intentId = myIntent?.id ?? conflictingIntents[0].id;
-          // Build a minimal diff from document text
           const docText = event.document.getText();
-          const diff = `--- a/${relPath}\n+++ b/${relPath}\n[staged by ${this.client.participantName} on save]`;
+          const lines = docText.split('\n');
+          const diff = [
+            `--- a/${relPath}`,
+            `+++ b/${relPath}`,
+            `@@ -0,0 +1,${lines.length} @@`,
+            ...lines.map(l => `+${l}`),
+          ].join('\n');
           await this.client.proposePatch(
             intentId, relPath, diff,
             `Save by ${this.client.participantName} while ${names} has an active intent on this file`,
