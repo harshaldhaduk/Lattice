@@ -128,7 +128,7 @@ export class LatticeClient {
     return data;
   }
 
-  async executeplan(specs: any[], repoPath: string): Promise<{ message: string }> {
+  async executePlan(specs: any[], repoPath: string): Promise<{ message: string }> {
     const res = await fetch(`${this.serverUrl}/api/sessions/${this.sessionId}/execute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
