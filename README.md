@@ -2,13 +2,13 @@
 
 A shared coding session inside VS Code: teammates and live agent activity on the right, with one Codex/Claude composer in the bottom panel and a session dashboard opened from the left activity bar. Lattice is an independent VS Code collaboration extension.
 
-The extension ID is `local-workbench.lattice`. Settings and commands use `lattice.*`; relay environment variables use `LATTICE_*`. See [upgrade notes](docs/UPGRADING.md) when moving from an earlier extension identity.
+The extension ID is `HarshalDhaduk.lattice`. Settings and commands use `lattice.*`; relay environment variables use `LATTICE_*`. See [upgrade notes](docs/UPGRADING.md) when moving from an earlier extension identity.
 
 The interactive preview is available at http://127.0.0.1:4320 after `npm run preview`.
 
 ## Open it
 
-1. Install `lattice-0.5.0.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the new workspace and coordination features require protocol 3.
+1. Install `lattice-0.5.1.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the workspace and coordination features require protocol 3. If upgrading from the earlier test build, disable or uninstall `local-workbench.lattice` first so only one copy runs.
 2. Open your GitHub repository. Click the **Lattice Sessions** icon on the left and choose **New session**. Give the feature a name; Lattice fetches the base branch and opens a dedicated feature branch in a new window.
 3. Choose Codex or Claude Code in the bottom composer. Existing local CLI sign-ins are used; **Connect** opens provider setup/sign-in.
 4. Use **Invite** to copy an editor or viewer invitation. For teammates on another machine, configure a reachable shared relay below first. Guests need repository access; Lattice prepares their clone and live files automatically.
@@ -103,7 +103,7 @@ The source is split into `src/extension`, `src/providers`, `src/relay`, `src/sha
 
 ## Verification
 
-- TypeScript check and forty automated tests: relay authorization/state/reconnects/persistence, targeted guidance, provider protocol adapters, worktree patch application, file review guards, CRDT convergence, 24 concurrent clients, identity binding, invite lifecycle, encrypted storage, parallel usage, budgets, archiving, membership-scoped memory search, native presence interpolation, no-clone workspace hydration/sync, and atomic conflict reservations.
+- TypeScript check and 41 automated tests: relay authorization/state/reconnects/persistence, targeted guidance, provider protocol adapters, worktree patch application, file review guards, CRDT convergence, 24 concurrent clients, identity binding, invite lifecycle, encrypted storage, parallel usage, budgets, archiving, membership-scoped memory search, native presence interpolation, no-clone workspace hydration/sync, and atomic conflict reservations.
 - Browser interaction checks: dashboard search/filters, feature-session creation, compact composer, per-lane draft retention, Claude guidance, owner approval cards, provider-limit offers, and the existing plan/invitation flows.
 - Conflict sensitivity slider, saved preference and live-workspace join onboarding are covered by browser checks. `npm run test:workspace` checks managed-folder hydration, resume credentials, native unsaved typing, incoming host files and refreshed agent context in VS Code. Unit checks also cover bulk downloads while sync is paused, binary files, exclusions and stale-write rejection.
 - Native branch workflow: automatic guest Git preparation, matching session base/branch, hydration of uncommitted live work, preserved main checkout, new-window credentials and cancellation of queued overlapping prompts. Run `npm run test:branch-workflow`.

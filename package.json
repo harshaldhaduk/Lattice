@@ -2,8 +2,12 @@
   "name": "lattice",
   "displayName": "Lattice",
   "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
-  "version": "0.5.0",
-  "publisher": "local-workbench",
+  "version": "0.5.1",
+  "publisher": "HarshalDhaduk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harshaldhaduk/Lattice.git"
+  },
   "private": true,
   "license": "MIT",
   "icon": "media/icon.png",
@@ -202,7 +206,7 @@
     "test": "tsx --test test/*.test.ts",
     "relay": "tsx src/relay/cli.ts",
     "preview": "tsx src/preview.ts",
-    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links -o lattice-0.5.0.vsix",
+    "package": "npm run build && vsce package --no-dependencies --githubBranch releases/vscode-0.5.0",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"test/*.{ts,cjs}\" scripts/build.mjs",
     "test:ui": "node scripts/verify-preview.cjs",
     "test:live-ui": "node scripts/verify-live-ui.cjs",

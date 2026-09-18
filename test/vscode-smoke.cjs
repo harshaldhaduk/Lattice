@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const vscode = require("vscode");
 exports.run = async () => {
   const extension = vscode.extensions.getExtension(
-    "local-workbench.lattice",
+    "HarshalDhaduk.lattice",
   );
   assert.ok(extension, "Extension discovered");
   await extension.activate();

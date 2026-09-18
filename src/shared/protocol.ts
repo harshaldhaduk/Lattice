@@ -552,17 +552,18 @@ export function initials(name: string) {
     .join("")
     .toUpperCase();
 }
+const extensionId = "HarshalDhaduk.lattice";
 export function inviteLink(relay: string, room: string, token: string) {
-  return `vscode://local-workbench.lattice/join?${new URLSearchParams({ relay, room, token })}`;
+  return `vscode://${extensionId}/join?${new URLSearchParams({ relay, room, token })}`;
 }
 export function parseInvite(value: string) {
   const u = new URL(value);
   if (
     u.protocol !== "vscode:" ||
-    u.hostname !== "local-workbench.lattice" ||
+    u.hostname.toLowerCase() !== extensionId.toLowerCase() ||
     u.pathname !== "/join"
   )
-    throw Error("Paste an Lattice session invite link.");
+    throw Error("Paste a Lattice session invite link.");
   const relay = u.searchParams.get("relay") || "",
     room = u.searchParams.get("room") || "",
     token = u.searchParams.get("token") || "";

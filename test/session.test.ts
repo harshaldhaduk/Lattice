@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { startRelay } from "../src/relay/server";
 import { SessionClient } from "../src/shared/client";
 import { inviteLink, parseInvite, eventSchema } from "../src/shared/protocol";
+import manifest from "../package.json";
 const tick = () => new Promise((r) => setTimeout(r, 30));
 test("session membership, permissions, collaboration, approvals, and removal", async () => {
   const relay = await startRelay({ port: 0 });
@@ -314,6 +315,21 @@ test("relay restart restores shared state and denies abandoned approvals", async
     await relay.close();
     await rm(dir, { recursive: true, force: true });
   }
+});
+test("invitations target the installed publisher and accept normalized authority casing", () => {
+  const expected = {
+    relay: "wss://relay.example.com",
+    room: "room with spaces",
+    token: "token-with-encoded+characters&123",
+  };
+  const link = inviteLink(expected.relay, expected.room, expected.token);
+  const uri = new URL(link);
+  assert.equal(uri.hostname, `${manifest.publisher}.${manifest.name}`);
+  assert.deepEqual(parseInvite(link), expected);
+  uri.hostname = uri.hostname.toLowerCase();
+  assert.deepEqual(parseInvite(uri.href), expected);
+  uri.hostname = "another-publisher.lattice";
+  assert.throws(() => parseInvite(uri.href), /invite link/);
 });
 test("path and invite parsing rejects unsafe input", () => {
   for (const file of ["/etc/passwd", "../x", "src/../../x", "C:\\x", "x\0"])
