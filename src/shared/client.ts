@@ -155,6 +155,15 @@ export class SessionClient extends EventEmitter {
       branch,
       profile,
     });
+    if (
+      lifecycle &&
+      (!r.capabilities?.includes("workflow") || !r.session?.lifecycle)
+    ) {
+      await this.disconnect();
+      throw Error(
+        "This relay is too old for feature sessions. Restart it with the current Lattice relay, then create the session again.",
+      );
+    }
     this.accept(relay, r);
     return this.credentials!;
   }

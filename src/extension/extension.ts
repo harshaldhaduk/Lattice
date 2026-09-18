@@ -80,21 +80,24 @@ export async function activate(context: vscode.ExtensionContext) {
       if (e.visible) void c.openDashboard();
     }),
   );
-  const cmd = (id: string, fn: () => any) =>
+  const cmd = (id: string, fn: (...args: any[]) => any) =>
     context.subscriptions.push(
-      vscode.commands.registerCommand(id, async () => {
+      vscode.commands.registerCommand(id, async (...args: any[]) => {
         try {
-          await fn();
+          await fn(...args);
         } catch (e: any) {
           vscode.window.showErrorMessage(e.message);
         }
       }),
     );
   cmd("lattice.dashboard", () => c.openDashboard());
-  cmd("lattice.newSession", async () => {
-    const title = await vscode.window.showInputBox({
-      title: "What are you building?",
-    });
+  cmd("lattice.newSession", async (name?: string) => {
+    const title =
+      typeof name === "string"
+        ? name
+        : await vscode.window.showInputBox({
+            title: "What are you building?",
+          });
     if (title?.trim()) await c.flow.create(title.trim());
   });
   cmd("lattice.open", () => c.open());
@@ -110,11 +113,14 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     if (title) await c.flow.create(title);
   });
-  cmd("lattice.join", async () => {
-    const link = await vscode.window.showInputBox({
-      title: "Join a session",
-      prompt: "Paste your invite link",
-    });
+  cmd("lattice.join", async (invitation?: string) => {
+    const link =
+      typeof invitation === "string"
+        ? invitation
+        : await vscode.window.showInputBox({
+            title: "Join a session",
+            prompt: "Paste your invite link",
+          });
     if (link) await c.join(link);
   });
   cmd("lattice.invite", () => c.invite());

@@ -1438,6 +1438,9 @@ export async function startRelay(
   });
   try {
     await new Promise<void>((resolve, reject) => {
+      // ws forwards HTTP listen errors. Handle both emitters so a busy local
+      // port rejects startup instead of throwing before the HTTP handler runs.
+      wss.once("error", reject);
       http.once("error", reject);
       http.listen(options.port ?? 4319, options.host ?? "127.0.0.1", resolve);
     });

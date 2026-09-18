@@ -7,7 +7,69 @@ import { startRelay } from "../src/relay/server";
 import { SessionClient } from "../src/shared/client";
 import { inviteLink, parseInvite, eventSchema } from "../src/shared/protocol";
 import manifest from "../package.json";
+import { WebSocketServer } from "ws";
 const tick = () => new Promise((r) => setTimeout(r, 30));
+test("feature session creation rejects an older relay that drops branch metadata", async () => {
+  const server = new WebSocketServer({ host: "127.0.0.1", port: 0 });
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  server.on("connection", (socket) => {
+    socket.on("message", (data) => {
+      const request = JSON.parse(String(data));
+      socket.send(
+        JSON.stringify({
+          type: "reply",
+          requestId: request.requestId,
+          result: { capabilities: ["workspace", "coordination"], session: {} },
+        }),
+      );
+    });
+  });
+  const client = new SessionClient();
+  try {
+    const address = server.address() as { port: number };
+    await assert.rejects(
+      client.create(
+        `ws://127.0.0.1:${address.port}`,
+        "Feature",
+        "repo",
+        "session/feature",
+        { name: "Host" },
+        {
+          baseBranch: "main",
+          baseCommit: "a".repeat(40),
+          remote: "https://github.com/example/repo.git",
+          status: "active",
+        },
+      ),
+      /relay is too old/,
+    );
+    assert.equal(client.credentials, undefined);
+  } finally {
+    client.dispose();
+    for (const socket of server.clients) socket.terminate();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+test("a second local relay rejects a busy port without breaking the running relay", async () => {
+  const relay = await startRelay({ port: 0 });
+  const client = new SessionClient();
+  try {
+    await assert.rejects(startRelay({ port: relay.port }), {
+      code: "EADDRINUSE",
+    });
+    const session = await client.create(
+      `ws://127.0.0.1:${relay.port}`,
+      "Existing relay remains available",
+      "repo",
+      "main",
+      { name: "Host" },
+    );
+    assert.ok(session.room);
+  } finally {
+    client.dispose();
+    await relay.close();
+  }
+});
 test("session membership, permissions, collaboration, approvals, and removal", async () => {
   const relay = await startRelay({ port: 0 });
   const url = `ws://127.0.0.1:${relay.port}`;

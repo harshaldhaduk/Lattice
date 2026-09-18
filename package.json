@@ -2,7 +2,7 @@
   "name": "lattice-sync",
   "displayName": "Lattice Sync",
   "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "publisher": "HarshalDhaduk",
   "repository": {
     "type": "git",
