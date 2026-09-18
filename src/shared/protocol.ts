@@ -563,7 +563,7 @@ export function parseInvite(value: string) {
     u.hostname.toLowerCase() !== extensionId.toLowerCase() ||
     u.pathname !== "/join"
   )
-    throw Error("Paste a Lattice Sync session invite link.");
+    throw Error("Paste a Lattice session invite link.");
   const relay = u.searchParams.get("relay") || "",
     room = u.searchParams.get("room") || "",
     token = u.searchParams.get("token") || "";

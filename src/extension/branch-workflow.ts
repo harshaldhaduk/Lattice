@@ -17,7 +17,7 @@ import type { BranchSession } from "../shared/protocol";
 const exec = promisify(execFile);
 const identity = [
   "-c",
-  "user.name=Lattice Sync",
+  "user.name=Lattice",
   "-c",
   "user.email=session@localhost",
   "-c",
@@ -82,7 +82,7 @@ export async function snapshot(root: string) {
       "-p",
       head,
       "-m",
-      "Lattice Sync recovery checkpoint",
+      "Lattice recovery checkpoint",
     ]);
     return { head, tree, commit };
   } finally {
@@ -103,7 +103,7 @@ export async function discoverChecks(root: string, configured: string[]) {
 export async function runChecks(root: string, commands: string[][]) {
   if (!commands.length)
     throw Error(
-      "Choose a project check command in Lattice Sync settings before automatic integration.",
+      "Choose a project check command in Lattice settings before automatic integration.",
     );
   for (const [command, ...args] of commands)
     await exec(command, args, {

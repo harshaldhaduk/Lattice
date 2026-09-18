@@ -1443,7 +1443,7 @@ export function App({
       )}
       {(preferences || (state.onboarding && !!s && mode !== "composer")) && (
         <Modal
-          title="How cautious should Lattice Sync be?"
+          title="How cautious should Lattice be?"
           close={() => {
             if (!state.onboarding) setPreferences(false);
           }}
@@ -1879,7 +1879,7 @@ function Composer({
         </>
       ) : (
         <Empty icon={Bot} title="Your agents belong here.">
-          Start or join a session in the Lattice Sync sidebar to connect your
+          Start or join a session in the Lattice sidebar to connect your
           workflow.
         </Empty>
       )}

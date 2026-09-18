@@ -29,7 +29,7 @@ export async function reserveWork(
 ) {
   if (!client.capabilities.includes("coordination"))
     throw Error(
-      "Update the session relay to Lattice Sync 0.4 or newer for conflict checks.",
+      "Update the session relay to Lattice 0.4 or newer for conflict checks.",
     );
   let acknowledged: string[] = [];
   for (;;) {

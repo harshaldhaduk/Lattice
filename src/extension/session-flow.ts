@@ -393,7 +393,7 @@ export class SessionFlow {
   async finish() {
     if (this.busy)
       throw Error(
-        "Lattice Sync is checking session updates. Try again in a moment.",
+        "Lattice is checking session updates. Try again in a moment.",
       );
     const s = this.c.client.session;
     if (
@@ -444,7 +444,7 @@ export class SessionFlow {
         {
           modal: true,
           detail:
-            "GitHub handles review and merging. Lattice Sync will track the PR here.",
+            "GitHub handles review and merging. Lattice will track the PR here.",
         },
         "Publish PR",
       );

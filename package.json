@@ -26,66 +26,66 @@
     "commands": [
       {
         "command": "lattice.collaborate",
-        "title": "Lattice Sync: Collaboratively Edit Current File"
+        "title": "Lattice: Collaboratively Edit Current File"
       },
       {
         "command": "lattice.sessionTools",
-        "title": "Lattice Sync: Session Tools"
+        "title": "Lattice: Session Tools"
       },
       {
         "command": "lattice.history",
-        "title": "Lattice Sync: Resume Saved Session"
+        "title": "Lattice: Resume Saved Session"
       },
       {
         "command": "lattice.signIn",
-        "title": "Lattice Sync: Sign In to Relay"
+        "title": "Lattice: Sign In to Relay"
       },
       {
         "command": "lattice.open",
-        "title": "Lattice Sync: Open Session"
+        "title": "Lattice: Open Session"
       },
       {
         "command": "lattice.host",
-        "title": "Lattice Sync: Start a Session"
+        "title": "Lattice: Start a Session"
       },
       {
         "command": "lattice.join",
-        "title": "Lattice Sync: Join a Session"
+        "title": "Lattice: Join a Session"
       },
       {
         "command": "lattice.invite",
-        "title": "Lattice Sync: Copy Invite Link"
+        "title": "Lattice: Copy Invite Link"
       },
       {
         "command": "lattice.comment",
-        "title": "Lattice Sync: Comment on Selection"
+        "title": "Lattice: Comment on Selection"
       },
       {
         "command": "lattice.profile",
-        "title": "Lattice Sync: Edit Profile"
+        "title": "Lattice: Edit Profile"
       },
       {
         "command": "lattice.providers",
-        "title": "Lattice Sync: Connect Providers"
+        "title": "Lattice: Connect Providers"
       },
       {
         "command": "lattice.shareFile",
-        "title": "Lattice Sync: Share Current File Changes"
+        "title": "Lattice: Share Current File Changes"
       },
       {
         "command": "lattice.dashboard",
-        "title": "Lattice Sync: Sessions Dashboard"
+        "title": "Lattice: Sessions Dashboard"
       },
       {
         "command": "lattice.newSession",
-        "title": "Lattice Sync: New Feature Session"
+        "title": "Lattice: New Feature Session"
       }
     ],
     "viewsContainers": {
       "secondarySidebar": [
         {
           "id": "lattice-team",
-          "title": "Lattice Sync",
+          "title": "Lattice",
           "icon": "media/mark.svg"
         }
       ],
@@ -99,7 +99,7 @@
       "activitybar": [
         {
           "id": "lattice-dashboard",
-          "title": "Lattice Sync Sessions",
+          "title": "Lattice Sessions",
           "icon": "media/mark.svg"
         }
       ]
@@ -140,7 +140,7 @@
       ]
     },
     "configuration": {
-      "title": "Lattice Sync",
+      "title": "Lattice",
       "properties": {
         "lattice.animatePresence": {
           "type": "boolean",
