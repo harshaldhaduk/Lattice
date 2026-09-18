@@ -1,0 +1,14 @@
+**/*
+!package.json
+!README.md
+!LICENSE
+!dist/extension.cjs
+!dist/relay.cjs
+!dist/webview.js
+!dist/webview.css
+!dist/claude-sdk.mjs
+!dist/claude-sdk-LICENSE.md
+!media/**
+!docs/**
+!artifacts/workspace-preview.png
+!artifacts/session-dashboard.png

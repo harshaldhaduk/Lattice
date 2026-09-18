@@ -1,0 +1,38 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve, join } from "node:path";
+const exec = promisify(execFile);
+const directory = resolve("artifacts/demo");
+const manifest = JSON.parse(await readFile(join(directory, "manifest.json"), "utf8"));
+const probe = async file => Number((await exec("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file])).stdout.trim());
+const input = join(directory, "two-users-source.webm");
+const sourceDuration = await probe(input);
+const trim = Math.max(0, sourceDuration - manifest.duration);
+const chapters = [...manifest.chapters, { time: manifest.duration - 4.5, title: "Keep building", narration: "Stay in sync. Keep building." }];
+chapters[0].narration = "Alice and Bob. Two developers. One shared session.";
+const voices = await Promise.all(chapters.map(async (chapter, i) => {
+  const file = join(directory, `narration-${String(i).padStart(2, "0")}.aiff`);
+  await exec("say", ["-v", "Samantha", "-r", "175", "-o", file, chapter.narration]);
+  return { file, duration: await probe(file) };
+}));
+const filter = voices.map((voice, i) => {
+  const room = (chapters[i + 1]?.time ?? manifest.duration) - chapters[i].time - 0.8;
+  const speed = Math.max(1, voice.duration / Math.max(2, room));
+  const offset = Math.round((chapters[i].time + 0.3) * 1000);
+  return `[${i + 1}:a]atempo=${speed.toFixed(5)},aformat=sample_rates=48000:channel_layouts=stereo,volume=0.9,adelay=${offset}|${offset}[voice${i}]`;
+});
+filter.push(`${voices.map((_, i) => `[voice${i}]`).join("")}amix=inputs=${voices.length}:normalize=0,apad,atrim=duration=${manifest.duration}[narration]`);
+const metadata = ";FFMETADATA1\ntitle=Lattice — Two-user walkthrough\nartist=Lattice\ncomment=Actual extension UI and real local session relay; scripted agent responses and illustrative usage.\n" + chapters.map((chapter, i) => `[CHAPTER]\nTIMEBASE=1/1000\nSTART=${Math.round(chapter.time * 1000)}\nEND=${Math.round((chapters[i + 1]?.time ?? manifest.duration) * 1000)}\ntitle=${chapter.title}\n`).join("");
+const metadataFile = join(directory, "chapters.ffmeta");
+await writeFile(metadataFile, metadata);
+const destination = resolve("artifacts/lattice-two-user-demo.mp4");
+const args = ["-y", "-hide_banner", "-loglevel", "warning", "-ss", trim.toFixed(4), "-i", input];
+for (const voice of voices) args.push("-i", voice.file);
+args.push("-i", metadataFile, "-filter_complex", filter.join(";"), "-map", "0:v:0", "-map", "[narration]", "-map_metadata", String(voices.length + 1), "-map_chapters", String(voices.length + 1), "-t", manifest.duration.toFixed(4), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", destination);
+console.log(`Encoding ${manifest.duration.toFixed(1)} seconds at 2560 × 1440 with narration and chapter markers…`);
+await exec("ffmpeg", args, { maxBuffer: 4 * 1024 * 1024, timeout: 300000 });
+const timestamp = seconds => { const ms = Math.round(seconds * 1000); return [Math.floor(ms / 3600000), Math.floor(ms / 60000) % 60, Math.floor(ms / 1000) % 60].map(n => String(n).padStart(2, "0")).join(":") + "," + String(ms % 1000).padStart(3, "0"); };
+await writeFile(resolve("artifacts/lattice-two-user-demo.srt"), chapters.map((chapter, i) => `${i + 1}\n${timestamp(chapter.time + 0.3)} --> ${timestamp(Math.min(chapters[i + 1]?.time ?? manifest.duration, chapter.time + Math.max(3, voices[i].duration)))}\n${chapter.narration}\n`).join("\n"));
+await exec("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-ss", String(manifest.chapters[5].time - 2), "-i", destination, "-frames:v", "1", resolve("artifacts/lattice-two-user-demo-poster.jpg")]);
+console.log(JSON.stringify({ file: destination, duration: await probe(destination), resolution: "2560x1440", narration: "Samantha — macOS system voice", chapters: chapters.length }));

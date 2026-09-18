@@ -1,0 +1,238 @@
+{
+  "name": "lattice",
+  "displayName": "Lattice",
+  "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
+  "version": "0.5.0",
+  "publisher": "local-workbench",
+  "private": true,
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.106.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onStartupFinished",
+    "onUri"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "lattice.collaborate",
+        "title": "Lattice: Collaboratively Edit Current File"
+      },
+      {
+        "command": "lattice.sessionTools",
+        "title": "Lattice: Session Tools"
+      },
+      {
+        "command": "lattice.history",
+        "title": "Lattice: Resume Saved Session"
+      },
+      {
+        "command": "lattice.signIn",
+        "title": "Lattice: Sign In to Relay"
+      },
+      {
+        "command": "lattice.open",
+        "title": "Lattice: Open Session"
+      },
+      {
+        "command": "lattice.host",
+        "title": "Lattice: Start a Session"
+      },
+      {
+        "command": "lattice.join",
+        "title": "Lattice: Join a Session"
+      },
+      {
+        "command": "lattice.invite",
+        "title": "Lattice: Copy Invite Link"
+      },
+      {
+        "command": "lattice.comment",
+        "title": "Lattice: Comment on Selection"
+      },
+      {
+        "command": "lattice.profile",
+        "title": "Lattice: Edit Profile"
+      },
+      {
+        "command": "lattice.providers",
+        "title": "Lattice: Connect Providers"
+      },
+      {
+        "command": "lattice.shareFile",
+        "title": "Lattice: Share Current File Changes"
+      },
+      {
+        "command": "lattice.dashboard",
+        "title": "Lattice: Sessions Dashboard"
+      },
+      {
+        "command": "lattice.newSession",
+        "title": "Lattice: New Feature Session"
+      }
+    ],
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "lattice-team",
+          "title": "Lattice",
+          "icon": "media/mark.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "lattice-agent",
+          "title": "Agent",
+          "icon": "media/mark.svg"
+        }
+      ],
+      "activitybar": [
+        {
+          "id": "lattice-dashboard",
+          "title": "Lattice Sessions",
+          "icon": "media/mark.svg"
+        }
+      ]
+    },
+    "views": {
+      "lattice-team": [
+        {
+          "id": "lattice.people",
+          "name": "Session",
+          "type": "webview"
+        }
+      ],
+      "lattice-agent": [
+        {
+          "id": "lattice.composer",
+          "name": "Agent",
+          "type": "webview"
+        }
+      ],
+      "lattice-dashboard": [
+        {
+          "id": "lattice.sessions",
+          "name": "Sessions"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "lattice.comment",
+          "group": "lattice"
+        },
+        {
+          "command": "lattice.shareFile",
+          "group": "lattice@2",
+          "when": "resourceScheme == file"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Lattice",
+      "properties": {
+        "lattice.animatePresence": {
+          "type": "boolean",
+          "default": true,
+          "description": "Animate teammate avatars between text positions in native editors. Large navigation jumps snap immediately. Disable for static markers; Workbench: Reduce Motion set to on also disables this animation."
+        },
+        "lattice.taskCheckCommand": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Executable and arguments required before worktree integration, e.g. [npm, test]. Runs in the trusted task worktree."
+        },
+        "lattice.relayUrl": {
+          "type": "string",
+          "default": "ws://127.0.0.1:4319",
+          "description": "Session relay URL. Use wss:// for an internet relay."
+        },
+        "lattice.advertiseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Reachable relay URL to put in invitations (for example ws://your-tailnet-host:4319)."
+        },
+        "lattice.codexPath": {
+          "type": "string",
+          "default": "codex",
+          "description": "Local Codex CLI executable."
+        },
+        "lattice.claudePath": {
+          "type": "string",
+          "default": "claude",
+          "description": "Local Claude Code CLI executable."
+        },
+        "lattice.shareTranscripts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Share agent replies and tool logs with session members."
+        },
+        "lattice.liveSync": {
+          "type": "boolean",
+          "default": true,
+          "description": "Stream agent source edits to the session and apply compatible incoming edits. Unsaved or conflicting local files are paused; Follow agent remains available."
+        },
+        "lattice.baseBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Base branch used for new feature sessions and automatic reconciliation."
+        }
+      }
+    }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Local agents require a trusted workspace."
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "relay": "tsx src/relay/cli.ts",
+    "preview": "tsx src/preview.ts",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links -o lattice-0.5.0.vsix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"test/*.{ts,cjs}\" scripts/build.mjs",
+    "test:ui": "node scripts/verify-preview.cjs",
+    "test:live-ui": "node scripts/verify-live-ui.cjs",
+    "test:native-presence": "npm run build && node scripts/verify-native-presence.mjs",
+    "test:workspace": "npm run build && node scripts/run-vscode-test.mjs",
+    "test:integration": "npm run build && node scripts/run-vscode-test.mjs test/vscode-live.ts",
+    "test:workflow-ui": "node scripts/verify-workflow-ui.cjs",
+    "test:branch-workflow": "npm run build && node scripts/run-vscode-test.mjs test/vscode-workflow.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "diff": "^9.0.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ws": "^8.18.0",
+    "yjs": "^13.6.32",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/vscode": "^1.106.0",
+    "@types/ws": "^8.5.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.63.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
