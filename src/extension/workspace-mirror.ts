@@ -144,7 +144,7 @@ export class WorkspaceMirror {
   async start(publishHost = false) {
     if (!this.client.capabilities.includes("workspace"))
       throw Error(
-        "Update the session host and relay to Lattice 0.4 or newer to load the live workspace.",
+        "Update the session host and relay to Lattice Sync 0.4 or newer to load the live workspace.",
       );
     await mkdir(this.root, { recursive: true });
     try {

@@ -1,8 +1,8 @@
 {
-  "name": "lattice",
-  "displayName": "Lattice",
+  "name": "lattice-sync",
+  "displayName": "Lattice Sync",
   "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "HarshalDhaduk",
   "repository": {
     "type": "git",
@@ -26,66 +26,66 @@
     "commands": [
       {
         "command": "lattice.collaborate",
-        "title": "Lattice: Collaboratively Edit Current File"
+        "title": "Lattice Sync: Collaboratively Edit Current File"
       },
       {
         "command": "lattice.sessionTools",
-        "title": "Lattice: Session Tools"
+        "title": "Lattice Sync: Session Tools"
       },
       {
         "command": "lattice.history",
-        "title": "Lattice: Resume Saved Session"
+        "title": "Lattice Sync: Resume Saved Session"
       },
       {
         "command": "lattice.signIn",
-        "title": "Lattice: Sign In to Relay"
+        "title": "Lattice Sync: Sign In to Relay"
       },
       {
         "command": "lattice.open",
-        "title": "Lattice: Open Session"
+        "title": "Lattice Sync: Open Session"
       },
       {
         "command": "lattice.host",
-        "title": "Lattice: Start a Session"
+        "title": "Lattice Sync: Start a Session"
       },
       {
         "command": "lattice.join",
-        "title": "Lattice: Join a Session"
+        "title": "Lattice Sync: Join a Session"
       },
       {
         "command": "lattice.invite",
-        "title": "Lattice: Copy Invite Link"
+        "title": "Lattice Sync: Copy Invite Link"
       },
       {
         "command": "lattice.comment",
-        "title": "Lattice: Comment on Selection"
+        "title": "Lattice Sync: Comment on Selection"
       },
       {
         "command": "lattice.profile",
-        "title": "Lattice: Edit Profile"
+        "title": "Lattice Sync: Edit Profile"
       },
       {
         "command": "lattice.providers",
-        "title": "Lattice: Connect Providers"
+        "title": "Lattice Sync: Connect Providers"
       },
       {
         "command": "lattice.shareFile",
-        "title": "Lattice: Share Current File Changes"
+        "title": "Lattice Sync: Share Current File Changes"
       },
       {
         "command": "lattice.dashboard",
-        "title": "Lattice: Sessions Dashboard"
+        "title": "Lattice Sync: Sessions Dashboard"
       },
       {
         "command": "lattice.newSession",
-        "title": "Lattice: New Feature Session"
+        "title": "Lattice Sync: New Feature Session"
       }
     ],
     "viewsContainers": {
       "secondarySidebar": [
         {
           "id": "lattice-team",
-          "title": "Lattice",
+          "title": "Lattice Sync",
           "icon": "media/mark.svg"
         }
       ],
@@ -99,7 +99,7 @@
       "activitybar": [
         {
           "id": "lattice-dashboard",
-          "title": "Lattice Sessions",
+          "title": "Lattice Sync Sessions",
           "icon": "media/mark.svg"
         }
       ]
@@ -140,7 +140,7 @@
       ]
     },
     "configuration": {
-      "title": "Lattice",
+      "title": "Lattice Sync",
       "properties": {
         "lattice.animatePresence": {
           "type": "boolean",

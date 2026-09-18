@@ -1,19 +1,19 @@
-# Lattice
+# Lattice Sync
 
-A shared coding session inside VS Code: teammates and live agent activity on the right, with one Codex/Claude composer in the bottom panel and a session dashboard opened from the left activity bar. Lattice is an independent VS Code collaboration extension.
+A shared coding session inside VS Code: teammates and live agent activity on the right, with one Codex/Claude composer in the bottom panel and a session dashboard opened from the left activity bar. Lattice Sync is an independent VS Code collaboration extension.
 
-The extension ID is `HarshalDhaduk.lattice`. Settings and commands use `lattice.*`; relay environment variables use `LATTICE_*`. See [upgrade notes](docs/UPGRADING.md) when moving from an earlier extension identity.
+The extension ID is `HarshalDhaduk.lattice-sync`. Settings and commands use `lattice.*`; relay environment variables use `LATTICE_*`. See [upgrade notes](docs/UPGRADING.md) when moving from an earlier extension identity.
 
 The interactive preview is available at http://127.0.0.1:4320 after `npm run preview`.
 
 ## Open it
 
-1. Install `lattice-0.5.1.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the workspace and coordination features require protocol 3. If upgrading from the earlier test build, disable or uninstall `local-workbench.lattice` first so only one copy runs.
-2. Open your GitHub repository. Click the **Lattice Sessions** icon on the left and choose **New session**. Give the feature a name; Lattice fetches the base branch and opens a dedicated feature branch in a new window.
+1. Install `lattice-sync-0.5.2.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the workspace and coordination features require protocol 3. If upgrading from the earlier test build, disable or uninstall `local-workbench.lattice` or `HarshalDhaduk.lattice` first so only one copy runs.
+2. Open your GitHub repository. Click the **Lattice Sync Sessions** icon on the left and choose **New session**. Give the feature a name; Lattice Sync fetches the base branch and opens a dedicated feature branch in a new window.
 3. Choose Codex or Claude Code in the bottom composer. Existing local CLI sign-ins are used; **Connect** opens provider setup/sign-in.
-4. Use **Invite** to copy an editor or viewer invitation. For teammates on another machine, configure a reachable shared relay below first. Guests need repository access; Lattice prepares their clone and live files automatically.
+4. Use **Invite** to copy an editor or viewer invitation. For teammates on another machine, configure a reachable shared relay below first. Guests need repository access; Lattice Sync prepares their clone and live files automatically.
 5. Write your prompt. Click a teammate’s prompt to guide their agent. Owners can guide directly; editors need that agent owner’s approval. **My agent** returns to your own draft.
-6. When finished, choose **Finish → Create PR**. Lattice reconciles, runs checks, shows the changes, and asks before committing/pushing. Review and merge on GitHub; Lattice tracks completion.
+6. When finished, choose **Finish → Create PR**. Lattice Sync reconciles, runs checks, shows the changes, and asks before committing/pushing. Review and merge on GitHub; Lattice Sync tracks completion.
 
 Git and a signed-in GitHub CLI (`gh`) are required for the branch/PR workflow. Automatic checks use `npm run typecheck` and/or `npm run test` when available, or the executable/arguments in `lattice.taskCheckCommand`. See [the workflow and its boundaries](docs/WORKFLOW.md).
 
@@ -79,7 +79,7 @@ Then start the session and copy its invitation. A `127.0.0.1` invitation only wo
 
 Invitations expire after 24 hours by default and allow 31 joins; owners can revoke them in Session tools. Established memberships survive invite expiry. The default local relay uses display names and restricted JSON files. The hosted configuration verifies GitHub identities on every connection, optionally restricts access to one GitHub organization, and encrypts snapshots and backups with AES-256-GCM. Encryption at rest protects stored files; the relay can read session content. Editors may approve and stop one another’s agents. Leave `lattice.shareTranscripts` enabled for the shared transcript UI; disabling it suppresses agent/tool text sharing, while prompts, presence, status, approvals and usage remain shared.
 
-For a hosted deployment, follow [the deployment guide](docs/DEPLOYMENT.md). In VS Code set your `wss://` relay URL and run **Lattice: Sign In to Relay**. A token is sent only to that explicitly connected relay address.
+For a hosted deployment, follow [the deployment guide](docs/DEPLOYMENT.md). In VS Code set your `wss://` relay URL and run **Lattice Sync: Sign In to Relay**. A token is sent only to that explicitly connected relay address.
 
 For required worktree checks, set `lattice.taskCheckCommand` to an executable and its arguments, for example `["npm", "test"]`. **Run checks** must pass on the exact patch before **Integrate**. **Hand off** transfers a reviewed patch and recent conversation context; the recipient imports it into a fresh worktree at the same Git base.
 

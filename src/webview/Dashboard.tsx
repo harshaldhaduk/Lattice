@@ -99,7 +99,7 @@ export function Dashboard({
             />
           </label>
           <p>
-            Lattice prepares a new branch from the base branch. Invite your
+            Lattice Sync prepares a new branch from the base branch. Invite your
             teammate once it opens.
           </p>
           <button className="primary" type="submit">

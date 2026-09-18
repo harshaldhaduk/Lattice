@@ -174,7 +174,7 @@ export async function activate(context: vscode.ExtensionContext) {
     10,
   );
   status.command = "lattice.open";
-  status.text = "$(radio-tower) Lattice";
+  status.text = "$(radio-tower) Lattice Sync";
   status.show();
   context.subscriptions.push(status);
   let updateTimer: NodeJS.Timeout | undefined;
@@ -182,7 +182,7 @@ export async function activate(context: vscode.ExtensionContext) {
     presenceMarkers.refresh();
     status.text = c.state.session
       ? `$(radio-tower) ${c.state.session.people.filter((p) => p.online).length} in session`
-      : "$(radio-tower) Lattice";
+      : "$(radio-tower) Lattice Sync";
     if (!updateTimer)
       updateTimer = setTimeout(() => {
         updateTimer = undefined;

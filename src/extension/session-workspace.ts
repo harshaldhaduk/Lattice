@@ -203,7 +203,7 @@ export class SessionWorkspace {
         await git(root, ["add", "--all"]);
         await git(root, [
           "-c",
-          "user.name=Lattice",
+          "user.name=Lattice Sync",
           "-c",
           "user.email=session@localhost",
           "-c",

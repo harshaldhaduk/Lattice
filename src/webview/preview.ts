@@ -288,7 +288,7 @@ window.addEventListener("previewAction", ((e: CustomEvent) => {
     case "providers":
     case "refreshProviders":
       notice(
-        "Preview providers use sample data. Open Lattice in VS Code to use your installed Codex or Claude account.",
+        "Preview providers use sample data. Open Lattice Sync in VS Code to use your installed Codex or Claude account.",
       );
       return;
     case "settings":

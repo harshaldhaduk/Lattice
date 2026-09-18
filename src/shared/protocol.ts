@@ -552,7 +552,7 @@ export function initials(name: string) {
     .join("")
     .toUpperCase();
 }
-const extensionId = "HarshalDhaduk.lattice";
+const extensionId = "HarshalDhaduk.lattice-sync";
 export function inviteLink(relay: string, room: string, token: string) {
   return `vscode://${extensionId}/join?${new URLSearchParams({ relay, room, token })}`;
 }
@@ -563,7 +563,7 @@ export function parseInvite(value: string) {
     u.hostname.toLowerCase() !== extensionId.toLowerCase() ||
     u.pathname !== "/join"
   )
-    throw Error("Paste a Lattice session invite link.");
+    throw Error("Paste a Lattice Sync session invite link.");
   const relay = u.searchParams.get("relay") || "",
     room = u.searchParams.get("room") || "",
     token = u.searchParams.get("token") || "";

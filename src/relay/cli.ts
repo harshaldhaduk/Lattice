@@ -17,7 +17,7 @@ async function main() {
     organization: process.env.LATTICE_GITHUB_ORG,
   });
   console.log(
-    `Lattice relay listening on ${host}:${relay.port}. Use HOST=0.0.0.0 for a LAN/tailnet; terminate TLS at a proxy for internet access.`,
+    `Lattice Sync relay listening on ${host}:${relay.port}. Use HOST=0.0.0.0 for a LAN/tailnet; terminate TLS at a proxy for internet access.`,
   );
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => {

@@ -7,7 +7,7 @@ const files: Record<string, [string, string]> = {
   "/preview.js": ["dist/preview.js", "text/javascript"],
 };
 const html =
-  '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lattice Session · Interactive preview</title><link rel="stylesheet" href="/webview.css"></head><body><div id="root"></div><script src="/preview.js"></script><script src="/webview.js"></script></body></html>';
+  '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lattice Sync Session · Interactive preview</title><link rel="stylesheet" href="/webview.css"></head><body><div id="root"></div><script src="/preview.js"></script><script src="/webview.js"></script></body></html>';
 createServer(async (req, res) => {
   try {
     if (req.url === "/") {

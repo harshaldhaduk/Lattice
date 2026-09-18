@@ -165,7 +165,7 @@ export class CodexRunner implements Runner {
     await this.rpc("initialize", {
       clientInfo: {
         name: "lattice_session",
-        title: "Lattice Session",
+        title: "Lattice Sync Session",
         version: "0.1.0",
       },
       capabilities: {},
