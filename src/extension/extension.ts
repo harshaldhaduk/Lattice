@@ -92,13 +92,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
   cmd("lattice.dashboard", () => c.openDashboard());
   cmd("lattice.newSession", async (name?: string) => {
-    const title =
-      typeof name === "string"
-        ? name
-        : await vscode.window.showInputBox({
-            title: "What are you building?",
-          });
-    if (title?.trim()) await c.flow.create(title.trim());
+    await c.flow.create(typeof name === "string" ? name : undefined);
   });
   cmd("lattice.open", () => c.open());
   cmd("lattice.shareFile", () => c.fileSharing.shareActive());
@@ -106,13 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
   cmd("lattice.sessionTools", () => c.sessionTools());
   cmd("lattice.history", () => c.history());
   cmd("lattice.signIn", () => c.signIn());
-  cmd("lattice.host", async () => {
-    const title = await vscode.window.showInputBox({
-      title: "Start a shared session",
-      prompt: "What are you building?",
-    });
-    if (title) await c.flow.create(title);
-  });
+  cmd("lattice.host", () => c.flow.create());
   cmd("lattice.join", async (invitation?: string) => {
     const link =
       typeof invitation === "string"

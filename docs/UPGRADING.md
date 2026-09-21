@@ -1,8 +1,10 @@
-# Upgrading to Lattice Sync 0.5.2
+# Upgrading to Lattice Sync 0.5.4
+
+0.5.4 offers existing unfinished sessions before creating a new branch. Saved memberships are matched to the repository, completed sessions are excluded, and cached unfinished sessions remain visible when their relay is offline. Resuming or cancelling creates no branch; a new feature requires the explicit **Create a new session** choice. The 0.5.3 relay startup fix and old-relay compatibility check are included. This does not intercept VS Code window closure or delete existing branches.
 
 0.5.2 renames the extension to **Lattice Sync**, sets its Marketplace identity to `HarshalDhaduk.lattice-sync`, and updates session invitations. It retains the branch sessions, dashboard, role-based steering, limit handoffs and checked reconciliation introduced in 0.5.0. The relay protocol remains version 3; the 0.5.0 relay bundle is compatible.
 
-VS Code treats the earlier `local-workbench.lattice` and `HarshalDhaduk.lattice` test builds and this extension identity as separate extensions. Disable or uninstall the earlier extension, install `lattice-sync-0.5.2.vsix`, and reload the window so only one copy runs. Existing `lattice.*` settings and command IDs are unchanged. Extension-owned saved-session credentials, webview drafts and state do not automatically transfer between identities. Create or rejoin a session with a newly generated invitation, and sign in again if using a hosted relay. Retain any previous extension storage backup until needed history has been recovered. Provider CLI logins are managed separately and remain available.
+VS Code treats the earlier `local-workbench.lattice` and `HarshalDhaduk.lattice` test builds and this extension identity as separate extensions. Disable or uninstall the earlier extension, install `lattice-sync-0.5.4.vsix`, and reload the window so only one copy runs. Existing `lattice.*` settings and command IDs are unchanged. Extension-owned saved-session credentials, webview drafts and state do not automatically transfer between identities. Create or rejoin a session with a newly generated invitation, and sign in again if using a hosted relay. Retain any previous extension storage backup until needed history has been recovered. Provider CLI logins are managed separately and remain available.
 
 Existing sessions without branch metadata retain their legacy live-workspace behavior; create a new feature session to use the branch/PR lifecycle.
 

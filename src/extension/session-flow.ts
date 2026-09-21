@@ -3,7 +3,16 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { SessionClient } from "../shared/client";
 import type { Controller } from "./controller";
-import type { Credentials, BranchSession } from "../shared/protocol";
+import type {
+  Credentials,
+  BranchSession,
+  SessionCard,
+} from "../shared/protocol";
+import {
+  findUnfinishedSessions,
+  type ResumableSession,
+  type SavedMembership,
+} from "../shared/session-reuse";
 import { git } from "./git";
 import {
   createBranchSession,
@@ -16,6 +25,31 @@ import {
   snapshot,
   type Recovery,
 } from "./branch-workflow";
+export type SessionChoice = { resume: string } | "new" | undefined;
+async function chooseExistingSession(
+  sessions: ResumableSession[],
+): Promise<SessionChoice> {
+  const choices: (vscode.QuickPickItem & { choice?: SessionChoice })[] =
+    sessions.map((session) => ({
+      label: `$(debug-continue) Resume ${session.title}`,
+      description: session.branch,
+      detail: `${session.lifecycle?.status === "review" ? "Awaiting PR review" : "Unfinished session"}${session.verified ? "" : " · saved locally; relay unavailable"}`,
+      choice: { resume: session.id },
+    }));
+  choices.push({ label: "", kind: vscode.QuickPickItemKind.Separator });
+  choices.push({
+    label: "$(add) Create a new session",
+    detail: "Start a separate feature branch",
+    choice: "new",
+  });
+  return (
+    await vscode.window.showQuickPick(choices, {
+      title: "You have unfinished work in this repository",
+      placeHolder: "Resume a session, or explicitly start a separate feature",
+      ignoreFocusOut: true,
+    })
+  )?.choice;
+}
 export class SessionFlow {
   private timer?: ReturnType<typeof setInterval>;
   private busy = false;
@@ -25,7 +59,10 @@ export class SessionFlow {
   private observing = false;
   private creating = false;
   private disposed = false;
-  constructor(private c: Controller) {}
+  constructor(
+    private c: Controller,
+    private chooseSession = chooseExistingSession,
+  ) {}
   start() {
     this.timer = setInterval(() => void this.tick(), 15000);
     void this.tick();
@@ -146,13 +183,110 @@ export class SessionFlow {
       this.observing = false;
     }
   }
-  async create(title: string) {
+  private async unfinished(repo: string) {
+    const cached = this.c.context.globalState.get<SessionCard[]>(
+      "dashboard",
+      [],
+    );
+    const cards = [...cached, ...(this.c.state.dashboard || [])];
+    const current = this.c.client.session;
+    if (current)
+      cards.push({
+        ...current,
+        pending: current.approvals.filter((a) => a.status === "pending").length,
+        completed: current.plan.filter((p) => p.done).length,
+        steps: current.plan.length,
+      });
+    const saved = this.c.context.globalState
+      .get<{ id: string; time: number }[]>("sessions", [])
+      .slice(0, 100);
+    const memberships: SavedMembership[] = [];
+    for (const item of saved) {
+      const raw = await this.c.context.secrets.get(`savedSession:${item.id}`);
+      if (!raw) continue;
+      try {
+        const credentials: Credentials = JSON.parse(raw);
+        if (credentials.room === item.id && credentials.resume)
+          memberships.push({ ...item, credentials });
+      } catch {
+        /* An invalid saved membership must not be resumed. */
+      }
+    }
+    if (
+      this.c.client.credentials &&
+      !memberships.some((m) => m.id === this.c.client.credentials!.room)
+    )
+      memberships.push({
+        id: this.c.client.credentials.room,
+        time: Date.now(),
+        credentials: this.c.client.credentials,
+      });
+    return findUnfinishedSessions(
+      repo,
+      cards,
+      memberships,
+      async (credentials) => {
+        const observer = new SessionClient();
+        let cancelled = false;
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        observer.authorization = async (url) => {
+          const authorization = await this.c.client.authorization?.(url);
+          if (cancelled) throw Error("Session lookup cancelled");
+          return authorization;
+        };
+        try {
+          return await Promise.race([
+            (async () => {
+              await observer.connect(credentials.relay);
+              if (cancelled) throw Error("Session lookup cancelled");
+              const result = await observer.request({
+                op: "session.observe",
+                room: credentials.room,
+                resume: credentials.resume,
+              });
+              return result.card as SessionCard;
+            })(),
+            new Promise<never>((_, reject) => {
+              timeout = setTimeout(
+                () => reject(Error("Session lookup timed out")),
+                3000,
+              );
+            }),
+          ]);
+        } catch (error: any) {
+          if (error.message === "Session membership is required.")
+            return undefined;
+          throw error;
+        } finally {
+          cancelled = true;
+          clearTimeout(timeout);
+          await observer.disconnect();
+        }
+      },
+    );
+  }
+  async create(title?: string) {
     if (this.creating)
       throw Error("Your new session is already being prepared.");
     this.creating = true;
     try {
       if (!vscode.workspace.isTrusted)
         throw Error("Trust this repository before creating a session.");
+      const repo = await git(this.c.root, ["remote", "get-url", "origin"]);
+      const unfinished = await this.unfinished(repo);
+      if (unfinished.length) {
+        const choice = await this.chooseSession(unfinished);
+        if (!choice) return;
+        if (choice !== "new") {
+          await this.open(choice.resume);
+          return;
+        }
+      }
+      title = (
+        title ??
+        (await vscode.window.showInputBox({ title: "What are you building?" }))
+      )?.trim();
+      if (!title) return;
       const prepared = await createBranchSession(
         this.c.root,
         join(this.c.context.globalStorageUri.fsPath, "sessions"),
@@ -182,6 +316,10 @@ export class SessionFlow {
     }
   }
   async open(id: string) {
+    if (this.c.client.connected && this.c.client.session?.id === id) {
+      await this.c.open();
+      return;
+    }
     const path = this.c.context.globalState.get<string>(
       "managedWorkspace:" + id,
     );

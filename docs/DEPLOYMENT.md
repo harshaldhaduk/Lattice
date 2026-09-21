@@ -47,6 +47,6 @@ Existing local unencrypted snapshots are not automatically converted. Keep the l
 
 `docker compose ... up -d --build` rebuilds the relay. Disconnected agents are marked stopped after a restart and pending approvals are denied. Participants reconnect using their existing memberships; they restart tasks deliberately from the retained worktrees.
 
-The extension is packaged as `lattice-sync-0.5.2.vsix` under publisher `HarshalDhaduk`. Install it on every participant’s machine and reload VS Code. See [upgrade notes](UPGRADING.md) when replacing the earlier test build. Marketplace distribution requires uploading this package in the publisher management page or publishing with authenticated `vsce`; building the package alone does not publish it.
+The extension is packaged as `lattice-sync-0.5.4.vsix` under publisher `HarshalDhaduk`. Install it on every participant’s machine and reload VS Code. See [upgrade notes](UPGRADING.md) when replacing the earlier test build. Marketplace distribution requires uploading this package in the publisher management page or publishing with authenticated `vsce`; building the package alone does not publish it.
 
 Locally verified: container build/startup/health, anonymous rejection, non-root execution, storage round trips and key rejection, membership authorization, 24 concurrent local clients, and native Mac editor flows. Public DNS/TLS issuance, real GitHub sign-in against your organization, cross-machine networking and paid model execution still require a deployment trial.

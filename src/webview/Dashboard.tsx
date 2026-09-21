@@ -99,8 +99,8 @@ export function Dashboard({
             />
           </label>
           <p>
-            Lattice prepares a new branch from the base branch. Invite your
-            teammate once it opens.
+            Resume unfinished work if you already have a session, or create a
+            separate feature branch. Invite your teammate once it opens.
           </p>
           <button className="primary" type="submit">
             Start session <ArrowRight size={14} />
