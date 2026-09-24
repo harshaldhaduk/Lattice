@@ -1,3 +1,4 @@
+import { rememberProject, openInSameWindow } from "./workspace-navigation";
 import * as vscode from "vscode";
 import {
   mkdir,
@@ -232,11 +233,13 @@ export class SessionWorkspace {
   }
   async openJoined() {
     const root = await this.prepareJoined();
-    await vscode.commands.executeCommand(
-      "vscode.openFolder",
-      vscode.Uri.file(root),
-      { forceNewWindow: true },
-    );
+    await rememberProject(this.context, root);
+    this.dispose();
+    await this.client.disconnect();
+    const previous = vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (previous && previous.fsPath !== root)
+      await this.context.secrets.delete("session:" + previous.toString());
+    await openInSameWindow(root);
   }
   dispose() {
     this.active = false;

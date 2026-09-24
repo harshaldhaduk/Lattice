@@ -90,6 +90,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }),
     );
+  cmd("lattice.returnToProject", () => c.flow.returnToProject());
   cmd("lattice.dashboard", () => c.openDashboard());
   cmd("lattice.newSession", async (name?: string) => {
     await c.flow.create(typeof name === "string" ? name : undefined);

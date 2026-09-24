@@ -363,12 +363,13 @@ export function App({
             <div className="session-heading">
               <span className="live-dot" />
               <strong>{s.title}</strong>
-              <IconButton
-                title="Leave session"
+              <button
+                className="text-button"
+                title="Return to your original project; keep, publish, or discard this session"
                 onClick={() => post({ type: "leave" })}
               >
-                <LogOut size={13} />
-              </IconButton>
+                <LogOut size={13} /> Return to project
+              </button>
             </div>
             <div className="branch">
               <GitBranch size={12} />

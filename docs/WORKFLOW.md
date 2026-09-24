@@ -2,7 +2,7 @@
 
 ## Everyday use
 
-Open your repository, click the Lattice icon on the left, and create a named session. Lattice fetches `origin/main` (or `lattice.baseBranch`), creates a `session/<name>-<id>` branch in a managed Git worktree, and opens it in another VS Code window. Your original checkout is preserved. Invite your teammate; Lattice prepares their GitHub clone, checks out the session base, and downloads the live workspace. Git credentials, dependencies and provider sign-ins stay local.
+Open your repository, click the Lattice icon on the left, and create a named session. Lattice fetches `origin/main` (or `lattice.baseBranch`), creates a `session/<name>-<id>` branch in a managed Git worktree, and opens it in the same VS Code window. Your original checkout is preserved. Invite your teammate; Lattice prepares their GitHub clone, checks out the session base, and downloads the live workspace. Git credentials, dependencies and provider sign-ins stay local.
 
 The center dashboard shows active/completed session cards, people, progress and linked PRs. The right sidebar focuses on people, prompts, pending decisions and session status. Plans, comments, memory and task tools are folded under details. The bottom composer keeps provider choice and prompt entry visible; permission/model/worktree controls live under More options.
 
@@ -33,3 +33,7 @@ File comments and memory notes are pinned by file and content hash. When a file 
 No coordinator can guarantee zero semantic conflicts. Checked candidate integration prevents silent overwrite and catches failures covered by your checks; ambiguous design choices still need a person. Whole-file live-sync collisions preserve both workspaces and pause that file; they are not automatically reconciled by the Git base updater. Opt-in human CRDT editing handles simultaneous text changes in native buffers.
 
 A reachable shared relay and GitHub repository access are required for teammates on different machines. The default localhost relay is for one machine. Current workspace limits remain 2,000 files / 32 MiB total / 512 KiB each. No paid-provider trial, real GitHub PR publication or production deployment is implied by fixture tests. See [feature coverage](FEATURE-COVERAGE.md) for remaining reference-product gaps.
+
+Use **Return to project** in the session header to leave the managed folder. Keep the session for later, prepare a PR, or explicitly discard the local session branch and worktree. Discard requires the owner, no active agents or online teammates, and confirmation. Lattice returns to the original project before deleting the reviewed worktree; late file or branch changes stop deletion. Remote branches and PRs remain on GitHub. Closing VS Code simply leaves the session resumable.
+
+The automatic local relay runs as a separate process with a shared storage registry across VS Code profiles. Workspace switches and closing the starting window do not shut it down. Reload all windows when upgrading from an older build.

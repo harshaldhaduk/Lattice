@@ -1,3 +1,4 @@
+import { saveBeforeSwitch } from "./workspace-navigation";
 import { allowReconcileTool } from "./reconcile-permissions";
 import { SessionFlow } from "./session-flow";
 import { isProviderLimit } from "../providers/limits";
@@ -31,7 +32,7 @@ import {
   type SessionEvent,
   type AgentStatus,
 } from "../shared/protocol";
-import { startRelay } from "../relay/server";
+import { ensureLocalRelay } from "./local-relay";
 import { CodexRunner } from "../providers/codex";
 import { ClaudeRunner } from "../providers/claude";
 import { redact, type Runner, type AgentHooks } from "../providers/types";
@@ -64,7 +65,6 @@ export class Controller extends EventEmitter {
     repo: "",
     branch: "",
   };
-  private relay?: Awaited<ReturnType<typeof startRelay>>;
   private runner?: Runner;
   private activeTask?: Promise<void>;
   private cancelled = false;
@@ -344,6 +344,8 @@ export class Controller extends EventEmitter {
     this.emitState();
   }
   async initialize() {
+    if (vscode.workspace.workspaceFolders?.length)
+      await this.flow.completePendingCleanup();
     this.flow.start();
     this.trees = (
       this.context.workspaceState.get<TaskTree[]>("worktrees") || []
@@ -415,7 +417,10 @@ export class Controller extends EventEmitter {
     ];
     for (const path of candidates)
       try {
-        const r = await exec(path, ["--version"], { timeout: 5000 });
+        const r = await exec(path, ["--version"], {
+          timeout: 5000,
+          cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || homedir(),
+        });
         this.paths[provider] = path;
         return {
           id: provider,
@@ -433,18 +438,13 @@ export class Controller extends EventEmitter {
     this.emitState();
   }
   private async ensureRelay(relay: string) {
-    const u = validateRelay(relay);
-    if (["localhost", "127.0.0.1"].includes(u.hostname) && !this.relay) {
-      try {
-        this.relay = await startRelay({
-          port: Number(u.port || 4319),
-          dataDir: join(this.context.globalStorageUri.fsPath, "relay"),
-        });
-      } catch (e: any) {
-        if (e.code !== "EADDRINUSE") throw e;
-      }
-    }
+    validateRelay(relay);
+    await ensureLocalRelay(relay, {
+      entry: join(this.context.extensionPath, "dist", "relay.cjs"),
+      legacyDataDir: join(this.context.globalStorageUri.fsPath, "relay"),
+    });
   }
+
   async host(
     title: string,
     workingRoot = this.root,
@@ -497,6 +497,7 @@ export class Controller extends EventEmitter {
     this.emitState();
   }
   async join(value: string) {
+    if (!(await saveBeforeSwitch())) return;
     const c = parseInvite(value);
     await this.stop();
     this.sessionWorkspace.dispose();
@@ -1149,6 +1150,7 @@ export class Controller extends EventEmitter {
     }
   }
   async resumeSession(id: string) {
+    if (!(await saveBeforeSwitch())) return;
     const saved = await this.context.secrets.get(`savedSession:${id}`);
     if (!saved) throw Error("Join this session with an invitation first.");
     const c = JSON.parse(saved) as Credentials;
@@ -1178,21 +1180,9 @@ export class Controller extends EventEmitter {
       { title: "Resume a saved session" },
     );
     if (!selected) return;
-    const saved = await this.context.secrets.get(`savedSession:${selected.id}`);
-    if (!saved) throw Error("Saved membership is no longer available.");
-    const credentials = JSON.parse(saved) as Credentials;
-    await this.stop();
-    await this.client.disconnect();
-    await this.ensureRelay(credentials.relay);
-    await this.client.join(
-      credentials.relay,
-      credentials.room,
-      credentials.token,
-      this.profile,
-      credentials.resume,
-    );
-    await this.open();
+    await this.flow.open(selected.id);
   }
+
   async search(
     kind: "all" | "memory" | "history" = "all",
     scope: "session" | "memberships" = "session",
@@ -1235,6 +1225,7 @@ export class Controller extends EventEmitter {
   async sessionTools() {
     const selected = await vscode.window.showQuickPick(
       [
+        "Return to project",
         "Search history",
         "Search memory",
         "Search memory across my sessions",
@@ -1250,6 +1241,7 @@ export class Controller extends EventEmitter {
       ],
       { title: "Session tools" },
     );
+    if (selected === "Return to project") await this.flow.returnToProject();
     if (selected === "Search history") await this.search("history");
     if (selected === "Search memory") await this.search("memory");
     if (selected === "Search memory across my sessions")
@@ -1715,12 +1707,7 @@ export class Controller extends EventEmitter {
           this.emitState();
           break;
         case "leave":
-          await this.stop();
-          this.sessionWorkspace.dispose();
-          await this.client.disconnect();
-          await this.context.secrets.delete(this.sessionKey);
-          this.state.me = "";
-          this.emitState();
+          await this.flow.returnToProject();
           break;
         case "event":
           await this.send(eventSchema.parse(m.event));
@@ -1846,7 +1833,6 @@ export class Controller extends EventEmitter {
     this.live.dispose();
     this.followPanel?.dispose();
     this.client.dispose();
-    void this.relay?.close();
     this.output.dispose();
     clearTimeout(this.flushTimer);
     this.removeAllListeners();

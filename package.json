@@ -2,7 +2,7 @@
   "name": "lattice-sync",
   "displayName": "Lattice Sync",
   "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "publisher": "HarshalDhaduk",
   "repository": {
     "type": "git",
@@ -79,6 +79,10 @@
       {
         "command": "lattice.newSession",
         "title": "Lattice: New Feature Session"
+      },
+      {
+        "command": "lattice.returnToProject",
+        "title": "Lattice: Return to Project"
       }
     ],
     "viewsContainers": {
@@ -215,7 +219,8 @@
     "test:integration": "npm run build && node scripts/run-vscode-test.mjs test/vscode-live.ts",
     "test:workflow-ui": "node scripts/verify-workflow-ui.cjs",
     "test:branch-workflow": "npm run build && node scripts/run-vscode-test.mjs test/vscode-workflow.ts",
-    "test:session-reuse": "npm run build && node scripts/run-vscode-test.mjs test/vscode-session-reuse.ts"
+    "test:session-reuse": "npm run build && node scripts/run-vscode-test.mjs test/vscode-session-reuse.ts",
+    "test:session-navigation": "npm run build && node scripts/verify-session-navigation.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",

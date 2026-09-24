@@ -1,3 +1,14 @@
+import {
+  rememberProject,
+  saveBeforeSwitch,
+  openInSameWindow,
+} from "./workspace-navigation";
+import {
+  originalProject,
+  prepareCleanup,
+  cleanupSession,
+  type SessionCleanup,
+} from "./session-cleanup";
 import * as vscode from "vscode";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -287,12 +298,14 @@ export class SessionFlow {
         (await vscode.window.showInputBox({ title: "What are you building?" }))
       )?.trim();
       if (!title) return;
+      if (!(await saveBeforeSwitch())) return;
       const prepared = await createBranchSession(
         this.c.root,
         join(this.c.context.globalStorageUri.fsPath, "sessions"),
         title,
         vscode.workspace.getConfiguration("lattice").get("baseBranch", "main"),
       );
+      await rememberProject(this.c.context, prepared.path);
       await this.c.host(title, prepared.path, prepared.lifecycle);
       const credentials = this.c.client.credentials!;
       await this.c.context.secrets.store(
@@ -306,11 +319,10 @@ export class SessionFlow {
       await this.refresh();
       this.c.sessionWorkspace.dispose();
       await this.c.client.disconnect();
-      await vscode.commands.executeCommand(
-        "vscode.openFolder",
-        vscode.Uri.file(prepared.path),
-        { forceNewWindow: true },
+      await this.c.context.secrets.delete(
+        "session:" + vscode.Uri.file(this.c.root).toString(),
       );
+      await openInSameWindow(prepared.path);
     } finally {
       this.creating = false;
     }
@@ -324,6 +336,8 @@ export class SessionFlow {
       "managedWorkspace:" + id,
     );
     if (path && existsSync(path)) {
+      if (!(await saveBeforeSwitch())) return;
+      await rememberProject(this.c.context, path);
       const credentials = await this.c.context.secrets.get(
         `savedSession:${id}`,
       );
@@ -335,12 +349,188 @@ export class SessionFlow {
         "session:" + vscode.Uri.file(path).toString(),
         credentials,
       );
-      await vscode.commands.executeCommand(
-        "vscode.openFolder",
-        vscode.Uri.file(path),
-        { forceNewWindow: true },
-      );
+      await this.c.stop();
+      this.c.sessionWorkspace.dispose();
+      await this.c.client.disconnect();
+      if (this.c.root !== path)
+        await this.c.context.secrets.delete(
+          "session:" + vscode.Uri.file(this.c.root).toString(),
+        );
+      await openInSameWindow(path);
     } else await this.c.resumeSession(id);
+  }
+  async completePendingCleanup() {
+    const jobs = this.c.context.globalState.get<SessionCleanup[]>(
+      "pendingSessionCleanup",
+      [],
+    );
+    for (const job of jobs) {
+      if (job.project !== this.c.root) continue;
+      try {
+        await cleanupSession(
+          job,
+          join(this.c.context.globalStorageUri.fsPath, "sessions"),
+        );
+        await this.c.context.secrets.delete(
+          "session:" + vscode.Uri.file(job.path).toString(),
+        );
+        await this.c.context.secrets.delete(`savedSession:${job.room}`);
+        await this.c.context.globalState.update(
+          `managedWorkspace:${job.room}`,
+          undefined,
+        );
+        await this.c.context.globalState.update(
+          `returnProject:${job.path}`,
+          undefined,
+        );
+        for (const key of ["sessions", "dashboard"]) {
+          const records = this.c.context.globalState.get<{ id: string }[]>(
+            key,
+            [],
+          );
+          await this.c.context.globalState.update(
+            key,
+            records.filter((item) => item.id !== job.room),
+          );
+        }
+        await this.c.context.globalState.update(
+          "pendingSessionCleanup",
+          this.c.context.globalState
+            .get<SessionCleanup[]>("pendingSessionCleanup", [])
+            .filter((item) => item.room !== job.room),
+        );
+        void vscode.window.showInformationMessage(
+          `Discarded ${job.branch}. You are back in your project.`,
+        );
+      } catch (error: any) {
+        // Consume the authorization on failure. Never retry deletion on a later,
+        // unrelated activation without a fresh review of the preserved files.
+        await this.c.context.globalState.update(
+          "pendingSessionCleanup",
+          this.c.context.globalState
+            .get<SessionCleanup[]>("pendingSessionCleanup", [])
+            .filter((item) => item.room !== job.room),
+        );
+        void vscode.window.showErrorMessage(
+          `Session cleanup paused: ${error.message}`,
+        );
+      }
+    }
+  }
+  async returnToProject() {
+    if (this.busy)
+      throw Error("Wait for the current session update to finish.");
+    const root = this.c.root;
+    let project =
+      this.c.context.globalState.get<string>(`returnProject:${root}`) ||
+      (await originalProject(root).catch(() => undefined));
+    if (!project || project === root || !existsSync(project)) {
+      const folder = await vscode.window.showOpenDialog({
+        title: "Choose the project to return to",
+        canSelectFolders: true,
+        canSelectFiles: false,
+        canSelectMany: false,
+      });
+      project = folder?.[0]?.fsPath;
+    }
+    if (!project || project === root) return;
+    const session = this.c.client.session;
+    const owner =
+      session?.people.find((person) => person.id === this.c.state.me)?.role ===
+      "owner";
+    const choices = [
+      {
+        label: "Return to project",
+        detail:
+          "Stop your local agents and keep the session and branch to resume later",
+        action: "keep",
+      },
+    ];
+    if (owner && session?.lifecycle) {
+      choices.push({
+        label: "Create a pull request",
+        detail: "Review and publish your work on GitHub before returning",
+        action: "pr",
+      });
+      choices.push({
+        label: "Discard session and local branch",
+        detail:
+          "Delete this session worktree and its local branch; remote branches and PRs remain on GitHub",
+        action: "discard",
+      });
+    }
+    const choice = await vscode.window.showQuickPick(choices, {
+      title: "Leave this workspace",
+      ignoreFocusOut: true,
+    });
+    if (!choice) return;
+    if (!(await saveBeforeSwitch())) return;
+    if (choice.action === "discard" && !this.idle())
+      throw Error("Stop active agent turns before discarding this session.");
+    if (choice.action === "pr") {
+      await this.finish();
+      if (this.c.client.session?.lifecycle?.status !== "review") return;
+    }
+    if (choice.action === "discard" && session?.lifecycle) {
+      if (!this.c.client.connected)
+        throw Error("Reconnect before discarding this session.");
+      if (
+        session.people.some(
+          (person) => person.id !== this.c.state.me && person.online,
+        )
+      )
+        throw Error(
+          "Ask teammates to leave the session before discarding its branch. You can return and keep it meanwhile.",
+        );
+      const job = await prepareCleanup(
+        session.id,
+        root,
+        project,
+        session.branch,
+        join(this.c.context.globalStorageUri.fsPath, "sessions"),
+      );
+      const confirm = await vscode.window.showWarningMessage(
+        `Discard ${session.branch}?`,
+        {
+          modal: true,
+          detail:
+            "This deletes the local session branch and everything in its worktree, including uncommitted and ignored files. Your original project stays intact. Remote branches and pull requests are kept on GitHub.",
+        },
+        "Discard branch",
+      );
+      if (confirm !== "Discard branch") return;
+      if (
+        !this.idle() ||
+        this.c.client.session?.people.some(
+          (person) => person.id !== this.c.state.me && person.online,
+        )
+      )
+        throw Error(
+          "Session activity changed. Nothing was deleted; review again.",
+        );
+      await this.update({
+        ...session.lifecycle,
+        status: "closed",
+        detail: "Discarded by session owner",
+      });
+      const jobs = this.c.context.globalState.get<SessionCleanup[]>(
+        "pendingSessionCleanup",
+        [],
+      );
+      await this.c.context.globalState.update("pendingSessionCleanup", [
+        ...jobs.filter((item) => item.room !== job.room),
+        job,
+      ]);
+    }
+    await this.c.stop();
+    this.c.sessionWorkspace.dispose();
+    await this.c.client.disconnect();
+    // Old releases sometimes saved the same membership against the original
+    // checkout; returning must not silently rejoin from the wrong branch.
+    await this.c.context.secrets.delete(
+      "session:" + vscode.Uri.file(project).toString(),
+    );
+    await openInSameWindow(project);
   }
   private async update(lifecycle: BranchSession) {
     await this.c.client.event({ type: "session.lifecycle", lifecycle });
