@@ -8,7 +8,7 @@ The interactive preview is available at http://127.0.0.1:4320 after `npm run pre
 
 ## Open it
 
-1. Install `lattice-sync-0.5.5.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the workspace and coordination features require protocol 3. If upgrading from the earlier test build, disable or uninstall `local-workbench.lattice` or `HarshalDhaduk.lattice` first so only one copy runs.
+1. Install `lattice-sync-0.5.6.vsix` using **Extensions → … → Install from VSIX**. Requires VS Code 1.106 or newer. Reload the window after updating. Upgrade/restart the shared relay too; the workspace and coordination features require protocol 3. If upgrading from the earlier test build, disable or uninstall `local-workbench.lattice` or `HarshalDhaduk.lattice` first so only one copy runs.
 2. Open your GitHub repository. Click the **Lattice Sessions** icon on the left and choose **New session**. If this repository already has unfinished sessions, Lattice offers to resume one first. Choose **Create a new session** only for a separate feature; Lattice then fetches the base branch and opens its feature branch in the same window. Cancelling creates no branch.
 3. Choose Codex or Claude Code in the bottom composer. Existing local CLI sign-ins are used; **Connect** opens provider setup/sign-in.
 4. Use **Invite** to copy an editor or viewer invitation. For teammates on another machine, configure a reachable shared relay below first. Guests need repository access; Lattice prepares their clone and live files automatically.
@@ -23,6 +23,8 @@ Git and a signed-in GitHub CLI (`gh`) are required for the branch/PR workflow. A
 Native VS Code lets you move views. If you previously moved the panels, use **View: Reset View Locations**, or drag **Session** to the right sidebar and **Agent** to the bottom panel.
 
 ## Implemented
+
+Version 0.5.6 anchors the live cursor to the rendered text, preserves end-of-line positions, streams continuous file writes, and fixes later turns editing existing untracked files. **Follow live edits** is grouped inside the agent card. The live view handles tabs, Unicode, font changes and zoom without estimated character widths.
 
 Version 0.5 adds feature-branch sessions, the left-side dashboard, automatic overlap sequencing, checked base reconciliation, GitHub PR tracking, steering approvals, provider-limit handoffs and stale pinned notes. See [live workspace and coordination](docs/LIVE-WORKSPACE.md) for behavior, limits and architecture.
 
@@ -121,3 +123,5 @@ The source is split into `src/extension`, `src/providers`, `src/relay`, `src/sha
 ## Feature coverage
 
 See [feature coverage](docs/FEATURE-COVERAGE.md) for implemented capabilities and remaining gaps.
+
+Cursor regression checks: `npm run test:cursor-layout` uses the preview server on port 4340. `npm run test:cursor-review` opens a disposable native VS Code workspace and **runs a real 20-line Codex prompt using your local account**, followed by deterministic layout cases. It can consume provider usage. Captures and measurements are saved under `artifacts/cursor-review/`.

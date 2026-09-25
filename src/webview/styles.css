@@ -419,10 +419,34 @@ small {
   margin: 10px 0 0 20px;
   background: #1c1c1e;
   border-radius: 0 5px 5px 0;
+  overflow: hidden;
+}
+.agent-prompt {
+  display: block;
+  width: 100%;
+  text-align: left;
   padding: 9px 10px;
 }
-.agent-card:hover {
-  background: #242427;
+.agent-prompt:hover {
+  background: var(--hover);
+}
+.agent-prompt:focus-visible {
+  outline-offset: -2px;
+}
+.agent-card-actions {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+}
+.agent-card-actions .follow-agent-button {
+  margin: 0;
+  min-height: 26px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+.follow-agent-button:hover {
+  background: var(--hover);
 }
 .agent-top {
   display: flex;
@@ -1613,7 +1637,15 @@ small {
   transition: background 0.2s;
 }
 .live-code-line code {
+  display: block;
   font: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
 }
 .live-line-number {
   width: 60px;
@@ -1651,7 +1683,7 @@ small {
 .live-caret {
   display: block;
   width: 2px;
-  height: 24px;
+  height: 100%;
   background: var(--person-color);
   opacity: 0.65;
 }
@@ -1822,6 +1854,10 @@ small {
   padding-bottom: 16px;
   margin-bottom: 24px;
 }
+.dashboard-filters > [role="group"] {
+  display: flex;
+  flex-shrink: 0;
+}
 .dashboard-filters button {
   border: 0;
   background: transparent;
@@ -1991,10 +2027,53 @@ small {
     align-items: flex-start;
     flex-direction: column;
   }
+  .dashboard-filters {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dashboard-filters > .icon-button {
+    margin-left: auto;
+  }
+  .dashboard-search {
+    order: 1;
+    margin-left: 0;
+    width: 100%;
+  }
   .dashboard-search input {
-    width: 110px;
+    width: 100%;
   }
   .session-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.live-cursor-bubble {
+  max-width: 180px;
+}
+.live-cursor-bubble strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.live-cursor-bubble.bubble-left {
+  left: auto;
+  right: 4px;
+}
+.live-editor-toolbar {
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.live-follow-person {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.live-breadcrumb > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-breadcrumb > span:last-child {
+  flex-shrink: 0;
 }

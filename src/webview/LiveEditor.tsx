@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { cursorGeometry } from "./cursor-geometry";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowUpRight,
   Check,
@@ -61,44 +68,75 @@ export function LiveEditor({
   const lines = useMemo(() => doc?.content.split("\n") || [], [doc?.content]);
   const currentLine = Math.min(doc?.line || 0, Math.max(0, lines.length - 1));
   const column = Math.min(doc?.column || 0, lines[currentLine]?.length || 0);
-  const [cursor, setCursor] = useState({ x: 60, y: 18 });
+  const [cursor, setCursor] = useState({ x: 0, y: 0, height: 24 });
   const sheet = useRef<HTMLDivElement>(null);
+  const [bubbleLeft, setBubbleLeft] = useState(false);
   const typing =
     !!doc && now - doc.updated < 1800 && person?.agent?.status === "running";
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => {
-    if (!doc) return;
+  useLayoutEffect(() => {
+    if (!doc || !sheet.current || !scroll.current) return;
     setSelected(doc.key);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.font = getComputedStyle(sheet.current!).font;
-      const prefix = (lines[currentLine] || "")
-        .slice(0, column)
-        .replace(/\t/g, "  ");
-      setCursor({
-        x: 60 + ctx.measureText(prefix).width,
-        y: 18 + currentLine * 24,
-      });
-    }
-    if (follow && scroll.current) {
-      const view = scroll.current;
-      const target = currentLine * 24;
-      if (
-        target < view.scrollTop + 45 ||
-        target > view.scrollTop + view.clientHeight - 70
-      )
-        view.scrollTo({
-          top: Math.max(0, target - view.clientHeight / 2),
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "instant"
-            : "smooth",
-        });
-    }
+    const container = sheet.current,
+      view = scroll.current;
+    let alive = true;
+    const placeBubble = () => {
+      const code = container.querySelectorAll<HTMLElement>(
+        ".live-code-line code",
+      )[currentLine];
+      if (!code) return;
+      const position = cursorGeometry(code, column, container);
+      setBubbleLeft(position.x - view.scrollLeft > view.clientWidth - 190);
+    };
+    const measure = () => {
+      if (!alive) return;
+      const code = container.querySelectorAll<HTMLElement>(
+        ".live-code-line code",
+      )[currentLine];
+      if (!code) return;
+      const position = cursorGeometry(code, column, container);
+      setCursor(position);
+      if (follow) {
+        const top = position.y,
+          bottom = top + position.height;
+        const vertical =
+          top < view.scrollTop + position.height ||
+          bottom > view.scrollTop + view.clientHeight - position.height;
+        const horizontal =
+          position.x < view.scrollLeft + 60 ||
+          position.x > view.scrollLeft + view.clientWidth - 30;
+        if (vertical || horizontal)
+          view.scrollTo({
+            top: vertical
+              ? Math.max(0, top - view.clientHeight / 2)
+              : view.scrollTop,
+            left: horizontal
+              ? Math.max(0, position.x - view.clientWidth / 2)
+              : view.scrollLeft,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+              .matches
+              ? "instant"
+              : "smooth",
+          });
+      }
+      placeBubble();
+    };
+    measure();
+    const resize = new ResizeObserver(measure);
+    resize.observe(container);
+    resize.observe(view);
+    document.fonts.ready.then(measure);
+    document.fonts.addEventListener("loadingdone", measure);
+    view.addEventListener("scroll", placeBubble, { passive: true });
+    return () => {
+      alive = false;
+      resize.disconnect();
+      document.fonts.removeEventListener("loadingdone", measure);
+      view.removeEventListener("scroll", placeBubble);
+    };
   }, [doc?.key, doc?.version, follow, currentLine, column, lines]);
   const conflict = state.liveConflicts?.find((c) => c.file === doc?.file);
   return (
@@ -200,12 +238,15 @@ export function LiveEditor({
                 style={
                   {
                     transform: `translate(${cursor.x}px,${cursor.y}px)`,
+                    height: cursor.height,
                     "--person-color": person?.color || "#54b5f8",
                   } as React.CSSProperties
                 }
               >
                 <span className="live-caret" />
-                <div className="live-cursor-bubble">
+                <div
+                  className={`live-cursor-bubble${bubbleLeft ? " bubble-left" : ""}`}
+                >
                   {person?.avatar ? (
                     <img src={person.avatar} alt={person.name} />
                   ) : (

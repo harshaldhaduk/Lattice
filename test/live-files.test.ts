@@ -47,8 +47,8 @@ test("live synchronization accepts a matching base and preserves dirty or diverg
   );
   assert.equal(canSyncDocument(doc, "after\n", false).unchanged, true);
   assert.deepEqual(changedCursor("one\nend", "one\ntwo\nend"), {
-    line: 2,
-    column: 0,
+    line: 1,
+    column: 3,
   });
   assert.deepEqual(changedCursor("const x = 1;", "const x = 20;"), {
     line: 0,
@@ -138,4 +138,23 @@ test("live agent updates arrive incrementally, reject stale writers, and isolate
     b.dispose();
     await relay.close();
   }
+});
+
+test("agent cursor marks the end of written text across successive line writes", () => {
+  let before = "";
+  for (let i = 1; i <= 20; i++) {
+    const line = `${i}. Written line ${"x".repeat(i)}`;
+    const after = before + line + "\n";
+    assert.deepEqual(changedCursor(before, after), {
+      line: i - 1,
+      column: line.length,
+    });
+    before = after;
+  }
+  assert.deepEqual(changedCursor("a\r\n", "a\r\nb\r\n"), {
+    line: 1,
+    column: 1,
+  });
+  assert.deepEqual(changedCursor("a\nb\nc", "a\nc"), { line: 1, column: 0 });
+  assert.deepEqual(changedCursor("", "\t漢字 🙂\n"), { line: 0, column: 6 });
 });

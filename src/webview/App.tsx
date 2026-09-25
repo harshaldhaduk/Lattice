@@ -677,39 +677,54 @@ export function App({
                   </span>
                 </div>
                 {person.agent ? (
-                  <button
+                  <div
                     className={`agent-card ${person.agent.status}`}
                     style={{ borderLeftColor: person.color }}
-                    onClick={() => {
-                      setSelected(person.id);
-                      post({ type: "selectLane", id: person.id });
-                    }}
                   >
-                    <div className="agent-top">
-                      <span>
-                        <Bot size={11} />
-                        {person.agent.status === "running"
-                          ? "Working"
-                          : person.agent.status === "approval"
-                            ? "Needs approval"
-                            : person.agent.status === "done"
-                              ? "Finished"
-                              : person.agent.status}
-                      </span>
-                      <small>{person.agent.provider}</small>
-                    </div>
-                    <p>{person.agent.task}</p>
-                    <div className="agent-detail">
-                      {person.agent.status === "running" && (
-                        <span className="thinking-dots">
-                          <i />
-                          <i />
-                          <i />
+                    <button
+                      className="agent-prompt"
+                      onClick={() => {
+                        setSelected(person.id);
+                        post({ type: "selectLane", id: person.id });
+                      }}
+                    >
+                      <div className="agent-top">
+                        <span>
+                          <Bot size={11} />
+                          {person.agent.status === "running"
+                            ? "Working"
+                            : person.agent.status === "approval"
+                              ? "Needs approval"
+                              : person.agent.status === "done"
+                                ? "Finished"
+                                : person.agent.status}
                         </span>
-                      )}
-                      {person.agent.detail || "Ready"}
+                        <small>{person.agent.provider}</small>
+                      </div>
+                      <p>{person.agent.task}</p>
+                      <div className="agent-detail">
+                        {person.agent.status === "running" && (
+                          <span className="thinking-dots">
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                        )}
+                        {person.agent.detail || "Ready"}
+                      </div>
+                    </button>
+                    <div className="agent-card-actions">
+                      <button
+                        className="follow-agent-button"
+                        onClick={() =>
+                          post({ type: "followAgent", id: person.id })
+                        }
+                      >
+                        <Eye size={12} /> Follow live edits{" "}
+                        <ExternalLink size={10} />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 ) : (
                   <div
                     className="no-agent"
@@ -717,15 +732,6 @@ export function App({
                   >
                     No agent running
                   </div>
-                )}
-                {person.agent && (
-                  <button
-                    className="follow-agent-button"
-                    onClick={() => post({ type: "followAgent", id: person.id })}
-                  >
-                    <Eye size={12} />
-                    Follow live edits <ExternalLink size={10} />
-                  </button>
                 )}
               </div>
             ))}

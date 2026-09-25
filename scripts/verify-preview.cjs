@@ -76,7 +76,7 @@ let browser;
     .click();
   await page.getByRole("dialog", { name: "Invite to session" }).waitFor();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Leave session" }).click();
+  await page.getByRole("button", { name: "Return to project" }).click();
   await page.getByRole("button", { name: "Join with an invite" }).click();
   await page
     .getByText("The host’s live workspace opens", { exact: false })

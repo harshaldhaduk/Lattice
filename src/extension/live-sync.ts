@@ -1,3 +1,4 @@
+import { watchFile, unwatchFile, type Stats } from "node:fs";
 import { findOpenFileDocument } from "./documents";
 import * as vscode from "vscode";
 import { readFile, realpath, mkdir } from "node:fs/promises";
@@ -21,6 +22,25 @@ export class LiveSync implements vscode.Disposable {
     canonical?: string;
   };
   private watcher?: vscode.FileSystemWatcher;
+  private polled = new Map<string, (current: Stats, previous: Stats) => void>();
+  private stopPolling() {
+    for (const [path, listener] of this.polled) unwatchFile(path, listener);
+    this.polled.clear();
+  }
+  private pollTouchedFile(uri: vscode.Uri) {
+    if (this.polled.has(uri.fsPath) || this.polled.size >= 100) return;
+    const listener = (current: Stats, previous: Stats) => {
+      if (
+        current.mtimeMs !== previous.mtimeMs ||
+        current.size !== previous.size
+      )
+        this.schedule(uri);
+    };
+    this.polled.set(uri.fsPath, listener);
+    // macOS can coalesce filesystem events while a tool holds a file open.
+    // Poll only touched source files during the agent turn, never the whole tree.
+    watchFile(uri.fsPath, { interval: 150, persistent: false }, listener);
+  }
   private base = new Map<
     string,
     { content: string; missing: boolean; crdt?: string; seed?: string }
@@ -59,6 +79,7 @@ export class LiveSync implements vscode.Disposable {
   }
   async begin(cwd: string, runId: string, isolated: boolean) {
     this.watcher?.dispose();
+    this.stopPolling();
     this.base.clear();
     this.pausedFiles.clear();
     this.initialUntracked = new Set(
@@ -79,11 +100,15 @@ export class LiveSync implements vscode.Disposable {
     )
       .split("\0")
       .filter(Boolean);
-    for (const file of modified.filter(sourceFile)) {
+    for (const file of new Set(
+      [...modified, ...this.initialUntracked].filter(sourceFile),
+    )) {
       try {
-        const content = await readFile(join(cwd, file), "utf8");
-        if (content.length <= 32000)
+        const content = await readFile(await safeWorkspacePath(cwd, file), "utf8");
+        if (content.length <= 32000) {
           this.base.set(file, { content, missing: false });
+          this.pollTouchedFile(vscode.Uri.file(join(cwd, file)));
+        }
       } catch {}
     }
     if (this.disposed) return;
@@ -111,6 +136,7 @@ export class LiveSync implements vscode.Disposable {
     if (this.receiving.has("main:" + file)) return;
     if (this.excluded(file)) return;
     if (file.startsWith("../") || isAbsolute(file) || !sourceFile(file)) return;
+    this.pollTouchedFile(uri);
     if (!this.enabled) {
       this.pausedFiles.add(file);
       return;
@@ -248,6 +274,7 @@ export class LiveSync implements vscode.Disposable {
   async finish() {
     const active = this.active;
     if (!active || this.disposed) return;
+    this.stopPolling();
     await new Promise((r) => setTimeout(r, 140));
     // Catch final atomic writes even if the OS watcher delivers its notification late.
     if (this.enabled) {
@@ -266,7 +293,7 @@ export class LiveSync implements vscode.Disposable {
       )
         .split("\0")
         .filter((f) => f && !this.initialUntracked.has(f));
-      for (const file of new Set([...changed, ...added]))
+      for (const file of new Set([...changed, ...added, ...this.base.keys()]))
         if (sourceFile(file)) this.enqueuePublish(file);
     }
     for (const [file, timer] of this.timers) {
@@ -278,6 +305,7 @@ export class LiveSync implements vscode.Disposable {
     this.watcher?.dispose();
     this.watcher = undefined;
     this.active = undefined;
+    this.stopPolling();
   }
   onState() {
     if (this.disposed) return;
@@ -439,6 +467,7 @@ export class LiveSync implements vscode.Disposable {
   }
   dispose() {
     this.disposed = true;
+    this.stopPolling();
     this.listener.dispose();
     this.watcher?.dispose();
     for (const t of this.timers.values()) clearTimeout(t);

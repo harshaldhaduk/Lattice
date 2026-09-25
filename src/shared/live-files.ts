@@ -15,7 +15,11 @@ export function changedCursor(before: string, after: string) {
     before[before.length - 1 - tail] === after[after.length - 1 - tail]
   )
     tail++;
-  const offset = Math.max(start, after.length - tail);
+  let offset = Math.max(start, after.length - tail);
+  // File-writing tools commonly terminate a completed line with a newline.
+  // Show the last edited text, not the beginning of the following untouched row.
+  while (offset > start && /[\r\n]/.test(after[offset - 1])) offset--;
+
   const lines = after.slice(0, offset).split("\n");
   return { line: lines.length - 1, column: lines.at(-1)!.length };
 }
