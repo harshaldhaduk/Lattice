@@ -1,5 +1,9 @@
 # Lattice
 
+https://github.com/user-attachments/assets/450d545e-e555-4bb7-b7d7-b34df0be2b41
+
+*2:35 demo · Unmute the player for sound.*
+
 Build together. Bring your agents.
 
 Lattice is a VS Code extension for working with teammates and AI agents in one shared coding session. Start a feature, invite your team, and go from the first prompt to a pull request—without leaving your editor.
@@ -16,7 +20,7 @@ Lattice is a VS Code extension for working with teammates and AI agents in one s
 
 ## Get started
 
-1. Install Lattice Sync and open your GitHub project in VS Code.
+1. [Install Lattice Sync](https://marketplace.visualstudio.com/items?itemName=HarshalDhaduk.lattice-sync) and open your GitHub project in VS Code.
 2. Open **Lattice Sessions**, choose **New session**, and name what you’re building.
 3. Choose your agent, invite a teammate, and send your first prompt.
 
