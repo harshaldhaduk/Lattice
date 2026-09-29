@@ -11,6 +11,14 @@
   --dim: #72727a;
   --blue: #58b5f5;
   --green: #36cba1;
+  --focus-ring: #ffffff;
+  --status-selection-bg: #303034;
+  --status-selection-fg: #ffffff;
+  --motion-fast: 140ms;
+  --motion-ui: 220ms;
+  --motion-enter: 280ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-settle: cubic-bezier(0.22, 0.68, 0, 1.04);
   --font: var(
     --vscode-font-family,
     -apple-system,
@@ -58,17 +66,22 @@ a {
   outline: none;
 }
 button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--blue);
+a:focus-visible {
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 button {
   transition:
-    background 0.15s,
-    color 0.15s;
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-ui) var(--ease-out),
+    opacity var(--motion-fast) ease,
+    translate var(--motion-fast) var(--ease-out),
+    background-size var(--motion-enter) var(--ease-out);
+}
+button:not(:disabled):active {
+  opacity: 0.88;
 }
 input,
 select,
@@ -157,8 +170,10 @@ small {
   background: #ededee;
   color: #141415;
 }
-.primary:hover {
+.primary:not(:disabled):hover {
   background: white;
+  color: #141415;
+  box-shadow: 0 0 0 3px #ffffff16;
 }
 .secondary {
   background: var(--surface);
@@ -181,9 +196,14 @@ small {
   color: var(--muted);
   padding: 4px 0;
   justify-content: flex-start;
+  border-radius: 3px;
+  background: linear-gradient(currentColor, currentColor) no-repeat left bottom / 0% 1px;
 }
-.text-button:hover {
+.text-button:not(:disabled):hover {
   color: var(--text);
+  background-color: transparent;
+  background-size: 100% 1px;
+  box-shadow: none;
 }
 .icon-button {
   height: 25px;
@@ -974,15 +994,16 @@ small {
   padding: 10px 12px 7px;
 }
 .prompt-box {
-  border: 1px solid #3c4754;
+  border: 1px solid #3d3d43;
   border-radius: 7px;
   padding: 1px;
   background: #151517;
-  box-shadow: 0 0 0 1px #1e2630;
+  box-shadow: 0 0 0 0 #ffffff00;
+  transition: border-color 280ms var(--ease-out), box-shadow 280ms var(--ease-out), background-color 280ms ease;
 }
 .prompt-box:focus-within {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 1px #58b5f566;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px #ffffff70, 0 0 0 4px #ffffff0d;
 }
 .prompt-box textarea {
   min-height: 58px;
@@ -1080,6 +1101,7 @@ small {
   justify-content: center;
   z-index: 50;
   padding: 14px;
+  animation: motion-fade-in var(--motion-ui) ease-out;
 }
 .modal {
   width: 400px;
@@ -1091,7 +1113,7 @@ small {
   border-radius: 10px;
   padding: 18px;
   box-shadow: 0 24px 80px #0008;
-  animation: enter 0.16s ease-out;
+  animation: motion-dialog-in var(--motion-enter) var(--ease-out);
 }
 .modal-title {
   display: flex;
@@ -1770,6 +1792,7 @@ small {
   padding: 14px;
   border: 1px solid var(--border, #333);
   border-radius: 8px;
+  transition: border-color var(--motion-ui) ease, box-shadow var(--motion-ui) ease;
 }
 .sensitivity-control label {
   display: flex;
@@ -1777,15 +1800,57 @@ small {
   gap: 12px;
 }
 .sensitivity-control output {
-  color: #80bfff;
+  color: #fff;
   font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: right;
+  white-space: nowrap;
+}
+.sensitivity-value {
+  display: inline-block;
+  animation: motion-value-in 180ms var(--ease-out);
 }
 .sensitivity-control input[type="range"] {
+  appearance: none;
   width: 100%;
+  height: 24px;
   padding: 0;
   margin: 16px 0 10px;
-  accent-color: #70b8f4;
-  cursor: pointer;
+  border: 0;
+  background: transparent;
+  accent-color: #fff;
+  cursor: grab;
+}
+.sensitivity-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #fff 0%, #fff var(--range-fill, 55.56%), #ffffff30 var(--range-fill, 55.56%), #ffffff30 100%);
+}
+.sensitivity-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  margin-top: -6.5px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 5px #0008;
+  transition: box-shadow var(--motion-ui) var(--ease-out), transform var(--motion-ui) var(--ease-settle);
+}
+.sensitivity-control input[type="range"]:hover::-webkit-slider-thumb,
+.sensitivity-control input[type="range"]:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 6px #ffffff15,
+    0 1px 5px #0008;
+}
+.sensitivity-control input[type="range"]:active {
+  cursor: grabbing;
+}
+.sensitivity-control input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.18);
+  box-shadow:
+    0 0 0 8px #ffffff25,
+    0 1px 5px #0008;
 }
 .sensitivity-scale {
   display: flex;
@@ -1857,6 +1922,13 @@ small {
 .dashboard-filters > [role="group"] {
   display: flex;
   flex-shrink: 0;
+  gap: 12px;
+}
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .dashboard-filters button {
   border: 0;
@@ -1867,8 +1939,35 @@ small {
   cursor: pointer;
 }
 .dashboard-filters button.active {
-  background: var(--vscode-list-activeSelectionBackground, #303034);
-  color: var(--vscode-list-activeSelectionForeground, #fff);
+  background: var(--status-selection-bg);
+  color: var(--status-selection-fg);
+}
+.dashboard-filters > .dashboard-status-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  position: relative;
+  isolation: isolate;
+}
+.dashboard-status-tabs::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc((100% - 12px) / 2);
+  border-radius: 5px;
+  /* Product-owned neutral selection, independent of the editor's accent. */
+  background: var(--status-selection-bg);
+  transition: transform var(--motion-enter) var(--ease-out);
+  pointer-events: none;
+}
+.dashboard-status-tabs.is-completed::before {
+  transform: translateX(calc(100% + 12px));
+}
+.dashboard-status-tabs > button {
+  position: relative;
+  z-index: 1;
+}
+.dashboard-status-tabs > button.active {
+  background: transparent;
 }
 .dashboard-search {
   margin-left: auto;
@@ -1892,10 +1991,12 @@ small {
   border-radius: 9px;
   overflow: hidden;
   background: var(--vscode-sideBar-background, #1e1e22);
-  transition: border-color 160ms;
+  transition: border-color 260ms ease, box-shadow 280ms var(--ease-out), background-color 260ms ease;
 }
-.session-tile:hover {
-  border-color: var(--vscode-focusBorder, #6d7180);
+.session-tile:hover,
+.session-tile:focus-within {
+  border-color: #ffffff65;
+  box-shadow: 0 6px 22px #0003;
 }
 .session-tile-open {
   display: block;
@@ -1976,11 +2077,44 @@ small {
   border: 1px solid var(--vscode-input-border, #444);
   border-radius: 5px;
 }
+.dashboard-join {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+.dashboard-join label {
+  min-width: 0;
+}
+.dashboard-join > button {
+  min-height: 38px;
+  margin: 0;
+  white-space: nowrap;
+  padding: 10px 18px;
+}
+.dashboard-create .sensitivity-control label {
+  flex-direction: row;
+  align-items: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .sensitivity-control input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+}
 .dashboard-notice {
   padding: 12px;
   border-left: 2px solid var(--vscode-editorWarning-foreground, #e7b665);
   margin-bottom: 20px;
   white-space: pre-wrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dashboard-notice > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dashboard-footnote {
   margin-top: 30px;
@@ -2076,4 +2210,210 @@ small {
 }
 .live-breadcrumb > span:last-child {
   flex-shrink: 0;
+}
+
+/* Interaction motion stays local: no animated layout, no looping decoration,
+   and no entrance animation on each streaming transcript update. */
+:is(.primary, .secondary, .icon-button, .send-button, .follow-agent-button):not(:disabled):active {
+  translate: 0 1px;
+  transition-duration: 70ms;
+}
+.primary > .lucide-arrow-right,
+.primary > .lucide-arrow-up,
+.section-chevron {
+  transition: transform var(--motion-ui) var(--ease-out);
+}
+.primary:not(:disabled):hover > .lucide-arrow-right { transform: translateX(2px); }
+.primary:not(:disabled):hover > .lucide-arrow-up { transform: translateY(-2px); }
+.section.expanded .section-chevron { transform: rotate(90deg); }
+:is(input:not([type="range"]), textarea, select) {
+  transition: border-color 280ms var(--ease-out), box-shadow 280ms var(--ease-out), background-color var(--motion-ui) ease;
+}
+:is(input:not([type="range"]), textarea, select):focus {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px #ffffff90, 0 0 0 4px #ffffff0d;
+}
+.prompt-box textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+.sensitivity-control input[type="range"]:focus {
+  outline: none;
+}
+.approval-card,
+.dashboard-create,
+.session-tile,
+.dashboard-empty {
+  animation: motion-surface-in var(--motion-enter) var(--ease-out);
+}
+.motion-notice { animation: motion-notice-in var(--motion-enter) var(--ease-out); }
+.motion-notice[data-exiting] {
+  pointer-events: none;
+  animation: motion-notice-out 160ms ease-in forwards;
+}
+@keyframes motion-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes motion-surface-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes motion-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes motion-notice-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes motion-notice-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes motion-value-in {
+  from { opacity: .4; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Link feedback is typography and motion, never a rectangular hover outline. */
+.text-button > svg,
+.person-view button > svg,
+.session-pr > svg,
+.send-button > svg,
+.icon-button > svg {
+  transition: transform 300ms var(--ease-settle), opacity 220ms ease;
+}
+.text-button:not(:disabled):hover > .lucide-arrow-right { transform: translateX(4px); }
+.person-view button:hover { color: #fff; background: transparent; }
+.session-pr:hover { background-color: #ffffff06; }
+.session-pr:hover > svg { transform: translate(2px, -2px); }
+.icon-button:not(:disabled):hover > .lucide-settings { transform: rotate(32deg); }
+.icon-button:not(:disabled):hover > .lucide-refresh-cw { transform: rotate(65deg); }
+.icon-button:not(:disabled):hover > .lucide-x { transform: rotate(90deg); }
+.send-button:not(:disabled):hover { background: #fff; box-shadow: 0 3px 14px #ffffff1c; }
+.send-button:not(:disabled):hover > svg { transform: translateY(-2px); }
+.send-button:not(:disabled):active > svg { transform: translateY(1px) scale(.9); }
+.follow-agent-button:not(:disabled):hover { border-color: #ffffff65; background-color: #ffffff09; }
+
+.panel-tabs > button {
+  position: relative;
+  border-bottom-color: transparent;
+}
+.panel-tabs > button::after {
+  content: "";
+  position: absolute;
+  height: 1px;
+  inset: auto 0 0;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  transition: transform 300ms var(--ease-out), opacity 180ms ease;
+}
+.panel-tabs > button.active { border-bottom-color: transparent; }
+.panel-tabs > button.active::after { transform: scaleX(1); opacity: .9; }
+.panel-tabs > button:not(:disabled):hover { color: #fff; background: transparent; }
+.panel-tabs > button:not(.active):hover::after { transform: scaleX(.32); opacity: .4; }
+
+.section-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 300ms var(--ease-out), opacity 220ms ease;
+}
+.section-reveal[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
+.section-reveal-clip { min-height: 0; overflow: hidden; }
+.section-reveal .section-body { transition: transform 300ms var(--ease-out); transform: translateY(-4px); }
+.section-reveal[data-open="true"] .section-body { transform: translateY(0); }
+.welcome > :is(.eyebrow, h1, p, .setup-note, .provider-status) {
+  animation: motion-surface-in 420ms var(--ease-out) both;
+}
+.welcome > h1 { animation-delay: 40ms; }
+.welcome > p { animation-delay: 80ms; }
+.welcome > .setup-note { animation-delay: 120ms; }
+.welcome > .provider-status { animation-delay: 160ms; }
+.modal-backdrop[data-exiting] {
+  pointer-events: none;
+  animation: motion-fade-out 160ms ease-in forwards;
+}
+.modal-backdrop[data-exiting] .modal { animation: motion-dialog-out 160ms ease-in forwards; }
+@keyframes motion-fade-out { to { opacity: 0; } }
+@keyframes motion-dialog-out { to { opacity: 0; transform: translateY(5px) scale(.99); } }
+
+/* Draw the focus boundary once, clockwise, then leave the completed stroke lit. */
+.focus-frame {
+  position: relative;
+  display: block;
+  min-width: 0;
+  border-radius: 6px;
+}
+.focus-frame > :is(input, textarea) { display: block; width: 100%; margin: 0; }
+.focus-frame > :is(input, textarea):focus {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--vscode-input-border, #444);
+}
+.focus-frame.prompt-box:focus-within { border-color: #3d3d43; box-shadow: none; }
+.focus-frame.prompt-box > textarea:focus { border-color: transparent; }
+.focus-trace {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+  color: var(--focus-ring);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+.focus-frame.prompt-box > .focus-trace,
+.focus-frame.session-tile > .focus-trace {
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+}
+.focus-trace path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  /* Pause on exit, preserving a partially drawn stroke while its glow fades. */
+  animation: focus-perimeter 650ms cubic-bezier(.4, 0, .2, 1) both paused;
+}
+.perimeter-glow { filter: blur(2px); opacity: .4; }
+.focus-frame:focus-within > .focus-trace,
+.perimeter-hover:hover > .focus-trace { opacity: 1; transition-duration: 100ms; }
+.focus-frame:focus-within > .focus-trace path,
+.perimeter-hover:hover > .focus-trace path { animation-play-state: running; }
+.focus-frame.session-tile { border-radius: 9px; overflow: visible; }
+.focus-frame.session-tile:hover,
+.focus-frame.session-tile:focus-within { border-color: var(--vscode-panel-border, #303034); }
+.session-tile-open { border-radius: inherit; }
+.session-pr { border-radius: 0 0 8px 8px; }
+@keyframes focus-perimeter { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.inline-form > .focus-frame { flex: 1; }
+.dashboard-search > .focus-frame { width: 180px; }
+@media (max-width: 650px) {
+  .dashboard-search > .focus-frame { width: 100%; }
+}
+
+/* Honor the editor's preference even when the OS still allows animation. */
+body.vscode-reduce-motion *,
+body.vscode-reduce-motion *::before,
+body.vscode-reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+body.vscode-reduce-motion button { translate: none !important; }
+body.vscode-reduce-motion .primary > svg { transform: none !important; }
+body.vscode-reduce-motion :is(.text-button, .icon-button, .send-button, .session-pr) > svg { transform: none !important; }
+body.vscode-reduce-motion input[type="range"]::-webkit-slider-thumb {
+  transition: none !important;
+  transform: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  button { translate: none !important; }
+  .primary > svg { transform: none !important; }
+  :is(.text-button, .icon-button, .send-button, .session-pr) > svg { transform: none !important; }
+  input[type="range"]::-webkit-slider-thumb { transform: none !important; }
 }

@@ -1,4 +1,8 @@
 import { readDraft, saveDraft } from "./persistence";
+import { StrictnessSlider } from "./StrictnessSlider";
+import { Notice } from "./Notice";
+import { ModalPresence } from "./ModalPresence";
+import { FocusFrame } from "./FocusFrame";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Users,
@@ -173,12 +177,14 @@ function Section({
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
-        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        <ChevronRight size={12} className="section-chevron" />
         <Icon size={13} />
         <span>{label}</span>
         <small>{count}</small>
       </button>
-      {open && <div className="section-body">{children}</div>}
+      <div className="section-reveal" data-open={open} inert={!open} aria-hidden={!open}>
+        <div className="section-reveal-clip"><div className="section-body">{children}</div></div>
+      </div>
     </section>
   );
 }
@@ -186,15 +192,22 @@ function Modal({
   title,
   close,
   children,
+  leaving = false,
 }: {
   title: string;
   close: () => void;
   children: React.ReactNode;
+  leaving?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Capture the opener before React commits an autoFocus input in the dialog.
+  const previousFocus = useRef(document.activeElement as HTMLElement | null);
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement;
-    ref.current?.querySelector<HTMLElement>("input,button,select")?.focus();
+    if (leaving) return;
+    if (!ref.current?.contains(document.activeElement)) {
+      (ref.current?.querySelector<HTMLElement>("input:not(:disabled),textarea:not(:disabled),select:not(:disabled)") ||
+        ref.current?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus();
+    }
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
       if (e.key === "Tab") {
@@ -217,12 +230,15 @@ function Modal({
     document.addEventListener("keydown", handler);
     return () => {
       document.removeEventListener("keydown", handler);
-      prev?.focus();
+      if (previousFocus.current?.isConnected) previousFocus.current.focus();
     };
-  }, []);
+  }, [leaving]);
   return (
     <div
       className="modal-backdrop"
+      data-exiting={leaving || undefined}
+      inert={leaving}
+      aria-hidden={leaving || undefined}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -786,12 +802,12 @@ export function App({
                     }
                   }}
                 >
-                  <input
+                  <FocusFrame><input
                     aria-label="New plan step"
                     value={plan}
                     onChange={(e) => setPlan(e.target.value)}
                     placeholder="Add a step…"
-                  />
+                  /></FocusFrame>
                   <button aria-label="Add plan step">
                     <Plus size={14} />
                   </button>
@@ -868,12 +884,12 @@ export function App({
                     }
                   }}
                 >
-                  <textarea
+                  <FocusFrame><textarea
                     aria-label="Session comment"
                     placeholder="Leave a note for the team…"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                  />
+                  /></FocusFrame>
                   <button className="secondary small">Comment</button>
                 </form>
               )}
@@ -1225,12 +1241,12 @@ export function App({
                     }
                   }}
                 >
-                  <input
+                  <FocusFrame><input
                     aria-label="Shared memory"
                     placeholder="Remember a decision…"
                     value={memory}
                     onChange={(e) => setMemory(e.target.value)}
-                  />
+                  /></FocusFrame>
                   <button aria-label="Add memory">
                     <Plus size={14} />
                   </button>
@@ -1283,17 +1299,7 @@ export function App({
   );
   return (
     <>
-      {state.error && (
-        <div className="error-toast" role="alert">
-          <span>{state.error}</span>
-          <IconButton
-            title="Dismiss"
-            onClick={() => post({ type: "clearError" })}
-          >
-            <X size={14} />
-          </IconButton>
-        </div>
-      )}
+      <Notice message={state.error} className="error-toast" dismiss={() => post({ type: "clearError" })} />
       {mode === "sidebar" ? (
         sidebar
       ) : mode === "composer" ? (
@@ -1303,7 +1309,7 @@ export function App({
           <Composer state={state} post={post} selected={selected} />
         </PreviewShell>
       )}
-      {modal && (
+      <ModalPresence>{modal && (
         <Modal
           title={
             modal === "host"
@@ -1321,20 +1327,20 @@ export function App({
                 post({
                   type: "host",
                   title: title || "Working session",
-                  sensitivity,
+                  sensitivity: Math.round(sensitivity),
                 });
                 setModal(null);
               }}
             >
               <label>
                 What are you building?
-                <input
+                <FocusFrame><input
                   autoFocus
                   placeholder="e.g. Fix the lobby join race"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={120}
-                />
+                /></FocusFrame>
               </label>
               <div className="repo-choice">
                 <GitBranch size={15} />
@@ -1348,9 +1354,7 @@ export function App({
                 Teammates open it automatically when they join. Dependencies,
                 local credentials and ignored files stay on your machine.
               </p>
-              {mode === "preview" && (
-                <Sensitivity value={sensitivity} change={setSensitivity} />
-              )}
+              <Sensitivity value={sensitivity} change={setSensitivity} />
               <button className="primary full">
                 Create session <ArrowRight size={14} />
               </button>
@@ -1359,18 +1363,22 @@ export function App({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                post({ type: "join", link, sensitivity });
+                post({
+                  type: "join",
+                  link,
+                  sensitivity: Math.round(sensitivity),
+                });
                 setModal(null);
               }}
             >
               <label>
                 Session invitation
-                <textarea
+                <FocusFrame><textarea
                   placeholder="Paste your session invitation"
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
                   required
-                />
+                /></FocusFrame>
               </label>
               <p className="modal-note">
                 The host’s live workspace opens in a new VS Code window. No
@@ -1447,8 +1455,8 @@ export function App({
             </>
           )}
         </Modal>
-      )}
-      {(preferences || (state.onboarding && !!s && mode !== "composer")) && (
+      )}</ModalPresence>
+      <ModalPresence>{(preferences || (state.onboarding && !!s && mode !== "composer")) && (
         <Modal
           title="How cautious should Lattice be?"
           close={() => {
@@ -1459,14 +1467,14 @@ export function App({
           <button
             className="primary full"
             onClick={() => {
-              post({ type: "sensitivity", value: sensitivity });
+              post({ type: "sensitivity", value: Math.round(sensitivity) });
               setPreferences(false);
             }}
           >
             Save preference
           </button>
         </Modal>
-      )}
+      )}</ModalPresence>
     </>
   );
 }
@@ -1478,31 +1486,7 @@ function Sensitivity({
   change: (value: number) => void;
 }) {
   return (
-    <div className="sensitivity-control">
-      <label htmlFor="conflict-sensitivity">
-        Conflict sensitivity <output>{value} / 10</output>
-      </label>
-      <input
-        id="conflict-sensitivity"
-        type="range"
-        min="1"
-        max="10"
-        step="1"
-        value={value}
-        aria-label="Conflict sensitivity"
-        aria-valuetext={`${value} out of 10`}
-        onChange={(e) => change(Number(e.target.value))}
-      />
-      <div className="sensitivity-scale">
-        <span>1 · Fewer interruptions</span>
-        <span>10 · More cautious</span>
-      </div>
-      <p>
-        Before an agent starts, check its prompt against active work. Higher
-        settings flag broader overlaps. Clear file conflicts are flagged at
-        every level.
-      </p>
-    </div>
+    <StrictnessSlider value={value} change={change} explain />
   );
 }
 function Composer({
@@ -1716,7 +1700,7 @@ function Composer({
             <div ref={end} />
           </div>
           <div className="compose-wrap">
-            <div className="prompt-box">
+            <FocusFrame as="div" className="prompt-box">
               <textarea
                 ref={input}
                 aria-label="Prompt your agent"
@@ -1863,7 +1847,7 @@ function Composer({
                   </button>
                 )}
               </div>
-            </div>
+            </FocusFrame>
             <div className="compose-caption">
               <GitBranch size={10} />
               <span>

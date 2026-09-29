@@ -92,31 +92,158 @@ const assert = require("node:assert/strict");
     );
     await page.goto(process.env.PREVIEW_URL || "http://127.0.0.1:4327");
     await page.getByRole("heading", { name: "Your sessions" }).waitFor();
-    assert.equal(await page.locator(".session-tile").count(), 2);
-    await page
-      .getByRole("textbox", { name: "Search sessions" })
-      .fill("invites");
+    assert.equal(await page.locator(".session-tile").count(), 1);
+    const sessionTile = page.locator(".session-tile").first();
+    const cardBounds = await sessionTile.boundingBox();
+    await sessionTile.hover();
+    const cardTrace = sessionTile.locator(".perimeter-line");
+    const partial = await cardTrace.evaluate((el) => {
+      el.parentElement.querySelectorAll("path").forEach((path) => {
+        const animation = path.getAnimations()[0];
+        animation.pause();
+        animation.currentTime = 180;
+      });
+      const start = el.getPointAtLength(0);
+      return {
+        offset: parseFloat(getComputedStyle(el).strokeDashoffset),
+        x: start.x,
+        y: start.y,
+      };
+    });
+    assert.ok(partial.offset > 0.1 && partial.offset < 1);
+    assert.ok(
+      Math.abs(partial.x - cardBounds.width / 2) < 1 &&
+        Math.abs(partial.y - cardBounds.height + 0.75) < 1,
+    );
+    assert.equal(
+      await sessionTile
+        .locator(".perimeter-glow")
+        .evaluate((el) => getComputedStyle(el).filter),
+      "blur(2px)",
+    );
+    await page.screenshot({
+      path: "artifacts/session-perimeter-partial.png",
+      fullPage: true,
+    });
+    await cardTrace.evaluate((el) => {
+      el.parentElement.querySelectorAll("path").forEach((path) => {
+        path.getAnimations()[0].currentTime = 650;
+      });
+    });
+    await page.screenshot({
+      path: "artifacts/session-perimeter-complete.png",
+      fullPage: true,
+    });
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(100);
+    const fade = await sessionTile
+      .locator(".focus-trace")
+      .evaluate((el) => Number(getComputedStyle(el).opacity));
+    assert.ok(
+      fade > 0 && fade < 1,
+      "Session outline fades rather than disappearing abruptly",
+    );
+    await page.waitForTimeout(300);
+    assert.equal(
+      await sessionTile
+        .locator(".focus-trace")
+        .evaluate((el) => getComputedStyle(el).opacity),
+      "0",
+    );
+    await page.getByRole("textbox", { name: "Search sessions" }).fill("lobby");
     assert.equal(await page.locator(".session-tile").count(), 1);
     await page.getByRole("textbox", { name: "Search sessions" }).fill("");
     await page.getByRole("button", { name: "Completed", exact: true }).click();
     await page
       .getByRole("heading", { name: "Matchmaking", exact: true })
       .waitFor();
-    assert.equal(await page.locator(".session-tile").count(), 1);
+    assert.equal(await page.locator(".session-tile").count(), 2);
+    await page
+      .getByRole("heading", { name: "Player invites", exact: true })
+      .waitFor();
     await page.getByRole("button", { name: "Active", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Join session", exact: true })
+      .click();
+    const inviteBox = await page
+      .getByRole("textbox", { name: "Invitation link" })
+      .boundingBox();
+    const joinBox = await page
+      .getByRole("button", { name: "Join live work" })
+      .boundingBox();
+    assert.ok(joinBox.x >= inviteBox.x + inviteBox.width + 12);
+    assert.ok(
+      Math.abs(joinBox.y + joinBox.height - inviteBox.y - inviteBox.height) < 3,
+    );
+    await page
+      .getByRole("button", { name: "Join session", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "New session", exact: true })
       .click();
     await page
       .getByRole("textbox", { name: "What are you building?" })
       .fill("Player profiles");
+    const strictness = page.getByRole("slider", {
+      name: "Agent coordination strictness",
+    });
+    await strictness.fill("7.4");
+    assert.equal(
+      await strictness.getAttribute("aria-valuetext"),
+      "7 out of 10",
+    );
+    const primary = page.getByRole("button", {
+      name: "Start session",
+      exact: false,
+    });
+    // Adjacent controls need a real hit-target gap, in compact panels too.
+    for (const width of [375, 480, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 950 });
+      for (const [first, second] of [
+        ["Active", "Completed"],
+        ["Start session", "Cancel"],
+        ["Join session", "New session"],
+      ]) {
+        const a = await page
+          .getByRole("button", { name: first, exact: true })
+          .boundingBox();
+        const b = await page
+          .getByRole("button", { name: second, exact: true })
+          .boundingBox();
+        assert.ok(a && b, `${first}/${second} must be visible at ${width}px`);
+        assert.ok(
+          b.x - a.x - a.width >= 11.5 || b.y - a.y - a.height >= 11.5,
+          `${first}/${second} need a 12px gap at ${width}px`,
+        );
+      }
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        `Dashboard must not overflow at ${width}px`,
+      );
+    }
+    await page.setViewportSize({ width: 1300, height: 850 });
+    await page.screenshot({
+      path: "artifacts/dashboard-spacing-0.5.7.png",
+      fullPage: true,
+    });
+    await primary.hover();
+    await page.waitForTimeout(220);
+    assert.equal(
+      await primary.evaluate((el) => getComputedStyle(el).backgroundColor),
+      "rgb(255, 255, 255)",
+    );
     await page
       .getByRole("button", { name: "Start session", exact: false })
       .click();
     assert.ok(
       await page.evaluate(() =>
         window.actions.some(
-          (a) => a.type === "host" && a.title === "Player profiles",
+          (a) =>
+            a.type === "host" &&
+            a.title === "Player profiles" &&
+            a.sensitivity === 7,
         ),
       ),
     );
@@ -135,6 +262,17 @@ const assert = require("node:assert/strict");
     await page.reload();
     const input = page.getByRole("textbox", { name: "Prompt your agent" });
     await input.fill("My unfinished prompt");
+    assert.equal(
+      await page
+        .locator(".prompt-box .perimeter-line")
+        .evaluate((el) => getComputedStyle(el).stroke),
+      "rgb(255, 255, 255)",
+    );
+    assert.equal(
+      await input.evaluate((el) => getComputedStyle(el).boxShadow),
+      "none",
+      "Composer should have one outer focus boundary, not nested blue boxes",
+    );
     await page
       .getByRole("combobox", { name: "Agent conversation" })
       .selectOption("bro");
@@ -196,6 +334,30 @@ const assert = require("node:assert/strict");
     };
     await page.setViewportSize({ width: 370, height: 850 });
     await page.reload();
+    assert.equal(
+      await page
+        .locator(".approval-card")
+        .first()
+        .evaluate((el) => getComputedStyle(el).animationName),
+      "motion-surface-in",
+    );
+    const peopleHeading = page.getByRole("button", { name: /^PEOPLE/ });
+    const peopleReveal = peopleHeading
+      .locator("..")
+      .locator(".section-reveal")
+      .first();
+    await peopleHeading.click();
+    await page.waitForTimeout(350);
+    assert.equal(await peopleReveal.evaluate((el) => el.inert), true);
+    assert.equal(
+      (await peopleReveal.boundingBox()).height,
+      0,
+      "Collapsed sections must leave no blank space",
+    );
+    await peopleHeading.click();
+    await page.waitForTimeout(350);
+    assert.equal(await peopleReveal.evaluate((el) => el.inert), false);
+    assert.ok((await peopleReveal.boundingBox()).height > 20);
     await page
       .getByRole("button", { name: "Allow guidance", exact: true })
       .click();

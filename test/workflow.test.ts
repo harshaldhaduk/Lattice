@@ -40,6 +40,36 @@ async function repository() {
   return { dir, root, origin };
 }
 const passes = [[process.execPath, "-e", "process.exit(0)"]];
+test("snapshot ignores live agent metadata while preserving source changes and staging", async () => {
+  const { dir, root } = await repository();
+  try {
+    await mkdir(join(root, ".lattice"));
+    await writeFile(join(root, ".git", "info", "exclude"), ".lattice/\n");
+    await writeFile(
+      join(root, ".lattice", "session-context.json"),
+      '{"private":"context"}',
+    );
+    await writeFile(join(root, "app.txt"), "staged\n");
+    await git(root, ["add", "app.txt"]);
+    const staged = await git(root, ["diff", "--cached"]);
+    await writeFile(join(root, "app.txt"), "latest\n");
+    await writeFile(join(root, "literal[1].txt"), "new\n");
+    await rm(join(root, "other.txt"));
+    const saved = await snapshot(root);
+    assert.equal(await git(root, ["show", `${saved.tree}:app.txt`]), "latest");
+    assert.equal(
+      await git(root, ["show", `${saved.tree}:literal[1].txt`]),
+      "new",
+    );
+    assert.doesNotMatch(
+      await git(root, ["ls-tree", "-r", "--name-only", saved.tree]),
+      /\.lattice|other\.txt/,
+    );
+    assert.equal(await git(root, ["diff", "--cached"]), staged);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 test("feature session starts from fetched main and reconciliation preserves local edits and new files", async () => {
   const { dir, root } = await repository();
   try {

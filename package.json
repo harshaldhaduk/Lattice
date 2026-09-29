@@ -1,8 +1,8 @@
 {
   "name": "lattice-sync",
   "displayName": "Lattice Sync",
-  "description": "Live collaborative coding, feature sessions, teammate agent steering and automatic branch reconciliation.",
-  "version": "0.5.6",
+  "description": "Build together in VS Code. Share a coding session, steer AI agents with your team, and turn ideas into pull requests.",
+  "version": "0.5.11",
   "publisher": "HarshalDhaduk",
   "repository": {
     "type": "git",
@@ -218,6 +218,8 @@
     "test:workspace": "npm run build && node scripts/run-vscode-test.mjs",
     "test:integration": "npm run build && node scripts/run-vscode-test.mjs test/vscode-live.ts",
     "test:workflow-ui": "node scripts/verify-workflow-ui.cjs",
+    "test:motion": "node scripts/verify-motion.cjs",
+    "test:native-dashboard": "npm run build && node scripts/verify-native-dashboard.mjs",
     "test:branch-workflow": "npm run build && node scripts/run-vscode-test.mjs test/vscode-workflow.ts",
     "test:session-reuse": "npm run build && node scripts/run-vscode-test.mjs test/vscode-session-reuse.ts",
     "test:session-navigation": "npm run build && node scripts/verify-session-navigation.mjs",

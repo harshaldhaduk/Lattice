@@ -923,6 +923,9 @@ export class Controller extends EventEmitter {
       try {
         await this.live.begin(cwd, id, isolated || !!workingRoot);
         if (this.cancelled) return;
+        // The sender sees the same live document/cursor view teammates can follow.
+        // Open only after validation and reservation succeed, before provider edits.
+        await this.follow(me.id);
         const resume = await runner.run({
           cwd,
           prompt: input,

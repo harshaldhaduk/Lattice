@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Plus,
   Search,
@@ -9,6 +9,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { AppState, SessionCard } from "../shared/protocol";
+import { isCompletedSession } from "../shared/session-status";
+import { StrictnessSlider } from "./StrictnessSlider";
+import { Notice } from "./Notice";
+import { FocusFrame } from "./FocusFrame";
 const labels: Record<string, string> = {
   active: "In progress",
   reconciling: "Updating",
@@ -28,6 +32,12 @@ export function Dashboard({
   const [tab, setTab] = useState("active");
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
+  const [sensitivity, setSensitivity] = useState(
+    state.conflictSensitivity || 6,
+  );
+  useEffect(() => {
+    if (state.conflictSensitivity) setSensitivity(state.conflictSensitivity);
+  }, [state.conflictSensitivity]);
   const [joining, setJoining] = useState(false);
   const [link, setLink] = useState("");
   const s = state.session;
@@ -45,7 +55,7 @@ export function Dashboard({
       : [];
   const visible = cards.filter(
     (s) =>
-      (tab === "completed" ? s.archived : !s.archived) &&
+      (tab === "completed" ? isCompletedSession(s) : !isCompletedSession(s)) &&
       `${s.title} ${s.branch}`.toLowerCase().includes(query.toLowerCase()),
   );
   return (
@@ -56,7 +66,7 @@ export function Dashboard({
           <h1>Your sessions</h1>
           <p>One feature. One branch. Work together.</p>
         </div>
-        <div className="row">
+        <div className="dashboard-actions">
           <button className="secondary" onClick={() => setJoining(!joining)}>
             Join session
           </button>
@@ -65,87 +75,86 @@ export function Dashboard({
           </button>
         </div>
       </header>
-      {state.error && (
-        <div role="alert" className="dashboard-notice">
-          {state.error}
-          <button
-            className="text-button"
-            onClick={() => post({ type: "clearError" })}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      <Notice message={state.error} className="dashboard-notice" dismiss={() => post({ type: "clearError" })} />
       {creating && (
         <form
           className="dashboard-create"
           onSubmit={(e) => {
             e.preventDefault();
             if (title.trim()) {
-              post({ type: "host", title: title.trim() });
+              post({
+                type: "host",
+                title: title.trim(),
+                sensitivity: Math.round(sensitivity),
+              });
               setCreating(false);
             }
           }}
         >
           <label>
             What are you building?
-            <input
+            <FocusFrame><input
               autoFocus
               required
               maxLength={120}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Add multiplayer lobby"
-            />
+            /></FocusFrame>
           </label>
           <p>
             Resume unfinished work if you already have a session, or create a
             separate feature branch. Invite your teammate once it opens.
           </p>
-          <button className="primary" type="submit">
-            Start session <ArrowRight size={14} />
-          </button>
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => setCreating(false)}
-          >
-            Cancel
-          </button>
+          <StrictnessSlider value={sensitivity} change={setSensitivity} />
+          <div className="dashboard-actions">
+            <button className="primary" type="submit">
+              Start session <ArrowRight size={14} />
+            </button>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => setCreating(false)}
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       )}
       {joining && (
         <form
-          className="dashboard-create"
+          className="dashboard-create dashboard-join"
           onSubmit={(e) => {
             e.preventDefault();
-            post({ type: "join", link });
+            post({ type: "join", link, sensitivity: Math.round(sensitivity) });
             setJoining(false);
           }}
         >
           <label>
             Invitation link
-            <input
+            <FocusFrame><input
               autoFocus
               required
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="Paste your invitation"
-            />
+            /></FocusFrame>
           </label>
           <button className="primary">Join live work</button>
         </form>
       )}
       <div className="dashboard-filters">
-        <div role="group" aria-label="Session status">
+        <div role="group" aria-label="Session status" className={`dashboard-status-tabs ${tab === "completed" ? "is-completed" : ""}`}>
           <button
             className={tab === "active" ? "active" : ""}
+            aria-pressed={tab === "active"}
             onClick={() => setTab("active")}
           >
             Active
           </button>
           <button
             className={tab === "completed" ? "active" : ""}
+            aria-pressed={tab === "completed"}
             onClick={() => setTab("completed")}
           >
             Completed
@@ -153,12 +162,12 @@ export function Dashboard({
         </div>
         <label className="dashboard-search">
           <Search size={14} />
-          <input
+          <FocusFrame><input
             aria-label="Search sessions"
             placeholder="Find a session…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-          />
+          /></FocusFrame>
         </label>
         <button
           className="icon-button"
@@ -180,14 +189,14 @@ export function Dashboard({
           </h2>
           <p>
             {tab === "completed"
-              ? "Merged pull requests close their sessions automatically."
+              ? "Review-ready branches and their pull requests appear here. Merged sessions are archived automatically."
               : "Create a session, invite a teammate, and describe the work."}
           </p>
         </div>
       )}
       <div className="session-grid">
         {visible.map((s) => (
-          <article className="session-tile" key={s.id}>
+          <FocusFrame as="article" className="session-tile" key={s.id} hover radius={8.25}>
             <button
               className="session-tile-open"
               aria-label={`Open session ${s.title}`}
@@ -227,7 +236,7 @@ export function Dashboard({
                 <ArrowUpRight size={13} />
               </button>
             )}
-          </article>
+          </FocusFrame>
         ))}
       </div>
       <p className="dashboard-footnote">

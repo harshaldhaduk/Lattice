@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+const exec = promisify(execFile);
+const out = resolve('artifacts/demo-recordly');
+const file = resolve('artifacts/lattice-recordly-demo.mp4');
+const probe = JSON.parse((await exec('/opt/homebrew/bin/ffprobe',['-v','error','-show_entries','format=duration,size:stream=codec_type,width,height,r_frame_rate,nb_frames','-of','json',file])).stdout);
+assert.equal(probe.streams.length,1,'Must contain no audio stream');
+const video = probe.streams[0];
+assert.equal(video.codec_type,'video');
+assert.equal(video.width,2560); assert.equal(video.height,1440);
+assert.equal(video.r_frame_rate,'60/1');
+const blackMargins = [];
+for (const y of [0,1280]) {
+  const {stdout}=await exec('/opt/homebrew/bin/ffmpeg',['-v','error','-ss','60','-i',file,'-frames:v','1','-vf',`crop=2560:160:0:${y},signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-`,'-f','null','-']);
+  assert.match(stdout,/YMAX=16\b/,'Letterbox margin must be black');
+  blackMargins.push({y,height:160,maxLuma:16});
+}
+const {stdout}=await exec('/opt/homebrew/bin/ffmpeg',['-v','error','-ss','1.8','-i',file,'-t','1','-an','-f','framemd5','-'],{maxBuffer:2*1024*1024});
+const hashes=stdout.split('\n').filter(l=>l && !l.startsWith('#')).map(l=>l.split(',').at(-1).trim());
+const uniqueMotionFrames=new Set(hashes).size;
+assert.ok(uniqueMotionFrames>=50,`Zoom must have smooth unique frames, observed ${uniqueMotionFrames}`);
+const old=JSON.parse(await readFile(join(out,'manifest.json'),'utf8'));
+const metrics=JSON.parse(await readFile(join(out,'render-metrics.json'),'utf8'));
+const project=JSON.parse(await readFile(join(out,'lattice.recordly'),'utf8'));
+const cursor=JSON.parse(await readFile(join(out,'source.mp4.cursor.json'),'utf8'));
+const result={...old,destination:file,width:2560,height:1440,frameRate:60,audio:false,duration:Number(probe.format.duration),bytes:Number(probe.format.size),frameCount:Number(video.nb_frames),renderer:'Recordly FrameRenderer + VideoExporter',recordlyRevision:'18884285b11b3603fc4ccede89add40e0e4a9bd6',captureMethod:'ScreenCaptureKit isolated native windows',zoomRegionCount:project.editor.zoomRegions.length,cursorSampleCount:cursor.samples.length,blackMargins,uniqueMotionFramesPerSecond:uniqueMotionFrames,metrics:metrics.metrics};
+await writeFile(join(out,'manifest.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify({file,duration:result.duration,frameRate:60,zoomRegions:result.zoomRegionCount,uniqueMotionFrames,blackMargins,audio:false},null,2));

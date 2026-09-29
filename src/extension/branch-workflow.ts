@@ -23,6 +23,29 @@ const identity = [
   "-c",
   "commit.gpgsign=false",
 ];
+// Enumerate source paths before staging. Negative pathspecs naming an ignored
+// .lattice directory can make `git add` fail after a local agent creates it.
+async function stageSourceFiles(root: string, env = process.env) {
+  const { stdout } = await exec(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    { cwd: root, env, maxBuffer: 8 * 1024 * 1024 },
+  );
+  const files = [...new Set(stdout.split("\0"))].filter(
+    (file) => file && file !== ".lattice" && !file.startsWith(".lattice/"),
+  );
+  for (let i = 0; i < files.length; i += 128)
+    await exec(
+      "git",
+      [
+        "add",
+        "-A",
+        "--",
+        ...files.slice(i, i + 128).map((file) => `:(literal)${file}`),
+      ],
+      { cwd: root, env, maxBuffer: 8 * 1024 * 1024 },
+    );
+}
 export async function createBranchSession(
   root: string,
   storage: string,
@@ -66,14 +89,7 @@ export async function snapshot(root: string) {
   try {
     const head = await git(root, ["rev-parse", "HEAD"]);
     await run(["read-tree", head]);
-    await run([
-      "add",
-      "-A",
-      "--",
-      ".",
-      ":(exclude).lattice",
-      ":(exclude).lattice/**",
-    ]);
+    await stageSourceFiles(root, env);
     const tree = await run(["write-tree"]);
     const commit = await run([
       ...identity,
@@ -333,14 +349,7 @@ export async function publishPullRequest(
   )
     throw Error("Files changed after review. Prepare the PR again.");
   if (await git(root, ["status", "--porcelain"])) {
-    await git(root, [
-      "add",
-      "--all",
-      "--",
-      ".",
-      ":(exclude).lattice",
-      ":(exclude).lattice/**",
-    ]);
+    await stageSourceFiles(root);
     if ((await git(root, ["write-tree"])) !== before.tree)
       throw Error(
         "Files changed while staging. Review the changes before publishing.",
