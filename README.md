@@ -1,117 +1,33 @@
 # Lattice
 
-> **Build in parallel. Ship without conflict.**
+https://github.com/user-attachments/assets/450d545e-e555-4bb7-b7d7-b34df0be2b41
 
-Lattice is an AI-native coordination layer for VS Code that lets multiple developers and their AI agents work on the same codebase simultaneously — with shared intent tracking, real-time conflict detection, and automatic agent-to-agent negotiation before a single line is written.
+*2:35 demo · Unmute the player for sound.*
 
----
+Build together. Bring your agents.
 
-## The Problem
+Lattice is a VS Code extension for working with teammates and AI agents in one shared coding session. Start a feature, invite your team, and go from the first prompt to a pull request—without leaving your editor.
 
-Today, three developers working in parallel with AI agents are effectively flying blind. Each agent writes code without knowing what the others are doing. The result: merge conflicts, duplicated work, and broken assumptions discovered hours too late.
+## Your team, in the same flow
 
-Git is a record of what changed. It does not prevent two agents from making incompatible changes to the same function at the same time.
+- **Join the work instantly.** Share an invitation and open the session’s codebase in VS Code. No manual clone or pull to catch up.
+- **Watch agents work live.** Follow edits as they happen, with a moving cursor and shared conversation.
+- **Steer together.** Guide a teammate’s agent with feedback and course corrections, with approvals where required.
+- **Pick up where they left off.** When a teammate hits a provider limit, continue the task on your own account with shared context and work.
+- **Choose how closely agents coordinate.** Adjust coordination strictness to balance parallel work and overlap checks.
+- **Bring the tools you already use.** Run Codex or Claude Code through your existing local sign-in. Each person uses their own provider account.
+- **Finish with a pull request.** Review changes, run checks, and publish a PR. Find the branch and its PR in **Completed**.
 
-## The Solution
+## Get started
 
-Lattice sits inside your IDE and orchestrates parallel AI-assisted development:
+1. [Install Lattice Sync](https://marketplace.visualstudio.com/items?itemName=HarshalDhaduk.lattice-sync) and open your GitHub project in VS Code.
+2. Open **Lattice Sessions**, choose **New session**, and name what you’re building.
+3. Choose your agent, invite a teammate, and send your first prompt.
 
-- **Intent tracking** — every task is declared before work starts
-- **Pre-write conflict detection** — changes are checked against active work before being applied
-- **Agent-to-agent negotiation** — conflicting agents resolve overlap automatically, without human intervention
-- **Shadow patching** — uncertain changes are staged for human review, not blindly applied
-- **Clean GitHub sync** — sessions produce intentful commit history, not coordination noise
+You’ll need VS Code 1.106 or newer and a signed-in Codex or Claude Code CLI to run agents. Publishing PRs requires Git and a signed-in GitHub CLI. Working across machines requires a shared relay; see the [team setup guide](https://github.com/harshaldhaduk/Lattice/blob/releases/vscode-0.5.0/docs/REFERENCE.md#invite-teammates-on-another-machine).
 
-## How It Works
+Lattice is an independent extension. Provider usage limits still apply, and handoffs transfer shared task context—not accounts or private model state.
 
-```
-1. Developers join a shared Lattice session in VS Code
-2. Each registers their current task as a structured intent
-3. Before any agent writes a change → Lattice checks for conflicts
-4. If conflict detected → agents negotiate a resolution automatically
-5. Human approves when confidence is low or stakes are high
-6. Session syncs cleanly to GitHub when done
-```
+[Setup and development](https://github.com/harshaldhaduk/Lattice/blob/releases/vscode-0.5.0/docs/REFERENCE.md) · [Workflow details](https://github.com/harshaldhaduk/Lattice/blob/releases/vscode-0.5.0/docs/WORKFLOW.md) · [Upgrade guide](https://github.com/harshaldhaduk/Lattice/blob/releases/vscode-0.5.0/docs/UPGRADING.md)
 
-## Quick Start
-
-```bash
-# Clone the repo
-git clone https://github.com/harshaldhaduk/momentum.git
-cd momentum
-
-# Copy environment config
-cp server/.env.example server/.env
-# Add your ANTHROPIC_API_KEY to server/.env
-
-# Install dependencies and start the server
-npm install
-npm run dev   # starts server on :3001 + watches extension
-
-# In VS Code: Ctrl+Shift+P → "Developer: Install Extension from VSIX"
-# (or run 'npm run package -w extension' first)
-# Click the ⬡ Lattice icon in the sidebar → Create Session
-```
-
-### Docker (alternative)
-
-```bash
-docker compose up
-```
-
-## Architecture
-
-```
-VS Code Extension (TypeScript)
-  ├── Presence Panel — who's online, what they're building
-  ├── Intent Panel — live view of all active tasks
-  ├── Patch Panel — pending shadow patches awaiting approval
-  ├── File Save Interceptor — catches writes before they happen
-  └── MCP Tool Server — Claude Code native integration
-
-Coordination Backend (Node.js + Socket.io)
-  ├── Session management
-  ├── Intent graph (SQLite)
-  ├── Conflict detection engine (file + function level)
-  ├── Agent negotiation orchestrator (Claude claude-sonnet-4-6)
-  └── Shadow patch service
-```
-
-## Tech Stack
-
-- **TypeScript** — extension + backend
-- **VS Code Extension API** — IDE integration
-- **Socket.io** — real-time presence and coordination events
-- **SQLite** — intent graph and session state
-- **Anthropic Claude claude-sonnet-4-6** — agent negotiation and intent parsing
-- **Model Context Protocol (MCP)** — native Claude Code integration
-- **@babel/parser** — AST-level conflict detection
-- **simple-git** — Git operations for shadow patching
-
-## Documentation
-
-| Doc | Description |
-|---|---|
-| [Overview](docs/overview.md) | Project vision, pitch, and core differentiators |
-| [Problem](docs/problem.md) | Problem statement and why it matters now |
-| [Solution](docs/solution.md) | How Lattice works |
-| [Market](docs/market.md) | TAM/SAM/SOM and market timing |
-| [Competitive Landscape](docs/competitive-landscape.md) | Where Lattice sits vs. existing tools |
-| [Customers](docs/customers.md) | Target personas and customer journey |
-| [Go-to-Market](docs/go-to-market.md) | GTM strategy and launch plan |
-| [Monetization](docs/monetization.md) | Pricing tiers and revenue model |
-| [Product Design](docs/product-design.md) | UX flows and interface design |
-| [Technical Architecture](docs/technical-architecture.md) | System design and component breakdown |
-| [Agent Coordination](docs/agent-coordination.md) | Agent protocol and negotiation design |
-| [MVP](docs/mvp.md) | Hackathon scope and build plan |
-| [Demo Script](docs/demo-script.md) | 30-sec and 2-min demo narratives |
-| [Roadmap](docs/roadmap.md) | Post-hackathon path to startup viability |
-| [Naming](docs/naming.md) | Project name rationale and taglines |
-
-## Status
-
-Built at UTA Buildathon — April 2026.
-
----
-
-*Lattice: The coordination layer for teams that build fast with AI.*
+Current extension source: [VS Code release branch](https://github.com/harshaldhaduk/Lattice/tree/releases/vscode-0.5.0).
