@@ -29,7 +29,7 @@ test("local relay survives its starting process and shares persistent sessions a
     platform: "node",
     format: "cjs",
     banner: {
-      js: `require('node:fs').writeFileSync(${JSON.stringify(pidfile)}, String(process.pid));`,
+      js: `require('node:fs').writeFileSync(${JSON.stringify(pidfile)}, String(process.pid)); process.once('exit', () => require('node:fs').writeFileSync(${JSON.stringify(pidfile)} + '.stopped-' + process.pid, 'stopped'));`,
     },
   });
   await build({
@@ -45,9 +45,9 @@ test("local relay survives its starting process and shares persistent sessions a
     const pid = Number(await readFile(pidfile, "utf8"));
     process.kill(pid, "SIGTERM");
     for (let i = 0; i < 50; i++) {
-      if (
-        !(await fetch(`http://127.0.0.1:${port}/health`).catch(() => undefined))
-      )
+      // The HTTP listener closes before the final storage flush completes.
+      // Wait for this process's exit marker before restarting or removing data.
+      if (await readFile(`${pidfile}.stopped-${pid}`, "utf8").catch(() => false))
         return;
       await delay(50);
     }

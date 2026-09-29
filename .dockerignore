@@ -3,5 +3,6 @@
 !package-lock.json
 !src/**
 !scripts/build.mjs
+!scripts/demo/window-layout.mjs
 !tsconfig.json
 !test/**

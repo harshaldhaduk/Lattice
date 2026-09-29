@@ -9,6 +9,7 @@ RUN npm run build
 FROM build AS verify
 COPY tsconfig.json ./
 COPY test ./test
+COPY scripts/demo/window-layout.mjs ./scripts/demo/window-layout.mjs
 RUN apk add --no-cache git && npm run typecheck && npm test
 
 FROM node:22-alpine
